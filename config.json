@@ -1,0 +1,29 @@
+{
+  "display": {
+    "window_width": 800,
+    "window_height": 600,
+    "fullscreen": false,
+    "fps": 60
+  },
+  "audio": {
+    "master_volume": 0.7,
+    "sfx_volume": 0.8,
+    "music_volume": 0.6,
+    "enabled": true
+  },
+  "gameplay": {
+    "default_difficulty": "EASY",
+    "show_feedback": true,
+    "auto_calibration": false
+  },
+  "controls": {
+    "key_bindings": {
+      "LEFT": "K_LEFT",
+      "DOWN": "K_DOWN",
+      "UP": "K_UP",
+      "RIGHT": "K_RIGHT",
+      "PAUSE": "K_ESCAPE",
+      "START": "K_RETURN"
+    }
+  }
+}
