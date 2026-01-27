@@ -281,7 +281,7 @@ class GameEngine:
 
                 # 如果箭頭未被擊中且超出範圍，記錄為Miss
                 if not arrow.hit and not arrow.missed:
-                    self.score.add_score("MISS", 0)
+                    self.score.add_score("MISS", 0, self.current_time)
 
         for arrow in arrows_to_remove:
             self.arrows.remove(arrow)
