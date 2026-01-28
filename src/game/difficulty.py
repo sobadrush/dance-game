@@ -4,19 +4,22 @@
 """
 
 from typing import Dict, Tuple, Optional
-from .constants import (
-    ARROW_SPEED_EASY,
-    ARROW_SPEED_NORMAL,
-    GAME_AREA_X,
-    GAME_AREA_WIDTH,
-)
+from .constants import ARROW_SPEED_EASY, ARROW_SPEED_NORMAL, GAME_AREA_X
 
 
 class Difficulty:
     """難度管理系統類別"""
 
+    DEFAULT_DIFFICULTY = "EASY"
+    LANE_OFFSETS = {
+        "LEFT": 30,
+        "DOWN": 80,
+        "UP": 130,
+        "RIGHT": 180,
+    }
+
     def __init__(self):
-        self.current_difficulty = "EASY"
+        self.current_difficulty = self.DEFAULT_DIFFICULTY
 
         # 難度設定
         self.difficulties = {
@@ -40,10 +43,8 @@ class Difficulty:
 
         # 箭頭生成位置設定
         self.arrow_positions = {
-            "LEFT": (GAME_AREA_X + 30, 0),
-            "DOWN": (GAME_AREA_X + 80, 0),
-            "UP": (GAME_AREA_X + 130, 0),
-            "RIGHT": (GAME_AREA_X + 180, 0),
+            direction: (GAME_AREA_X + offset, 0)
+            for direction, offset in self.LANE_OFFSETS.items()
         }
 
     def get_current_settings(self) -> Dict:

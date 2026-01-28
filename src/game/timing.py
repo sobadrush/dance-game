@@ -12,6 +12,8 @@ from .constants import (
     GOOD_SCORE,
     MISS_SCORE,
     JUDGMENT_LINE_Y,
+    FEEDBACK_FADE_SECONDS,
+    JUDGMENT_COOLDOWN_SECONDS,
 )
 
 
@@ -21,11 +23,11 @@ class Timing:
     def __init__(self):
         self.judgment_line_y = JUDGMENT_LINE_Y  # 判定線Y座標
         self.last_judgment_time = {}  # 記錄上次判定時間，防止重複判定
-        self.cooldown_time = 0.1  # 判定冷卻時間（秒）
+        self.cooldown_time = JUDGMENT_COOLDOWN_SECONDS  # 判定冷卻時間（秒）
 
         # 判定回饋效果
         self.feedback_messages = []
-        self.feedback_duration = 0.5  # 回饋顯示時間（秒）
+        self.feedback_duration = FEEDBACK_FADE_SECONDS  # 回饋顯示時間（秒）
 
     def check_timing(
         self, arrow_y: float, current_time: float, direction: str
@@ -50,18 +52,15 @@ class Timing:
         distance = abs(arrow_y - self.judgment_line_y)
 
         # 判定邏輯
+        judgment = "MISS"
+        score = MISS_SCORE
+
         if distance <= PERFECT_RANGE:
             judgment = "PERFECT"
             score = PERFECT_SCORE
         elif distance <= GOOD_RANGE:
             judgment = "GOOD"
             score = GOOD_SCORE
-        elif distance <= MISS_RANGE:
-            judgment = "MISS"
-            score = MISS_SCORE
-        else:
-            judgment = "MISS"
-            score = MISS_SCORE
 
         # 更新最後判定時間
         self.last_judgment_time[direction] = current_time
@@ -110,9 +109,5 @@ class Timing:
         Returns:
             bool: 是否應該移除
         """
-        # 如果箭頭已被擊中，且超出判定範圍，則移除
-        if arrow_hit:
-            return arrow_y < self.judgment_line_y - MISS_RANGE
-
-        # 如果箭頭未被擊中，且完全超出判定範圍，則移除
+        # 不論是否擊中，只要超出判定範圍就移除
         return arrow_y < self.judgment_line_y - MISS_RANGE

@@ -19,6 +19,13 @@ from .constants import (
     ARROW_START_Y,
     ARROW_WIDTH,
     ARROW_HEIGHT,
+    COMBO_EFFECT_FADE_SECONDS,
+    COMBO_FLOAT_SPEED,
+    FEEDBACK_FADE_SECONDS,
+    GHOST_ARROW_RGBA,
+    KEY_PRESS_COOLDOWN_SECONDS,
+    MAX_HIT_DISTANCE,
+    PAUSE_OVERLAY_ALPHA,
     BLACK,
     WHITE,
     GRAY,
@@ -172,7 +179,10 @@ class GameEngine:
         # 防止重複觸發
         current_time = time.time()
         if key in self.last_key_press_time:
-            if current_time - self.last_key_press_time[key] < 0.1:
+            if (
+                current_time - self.last_key_press_time[key]
+                < KEY_PRESS_COOLDOWN_SECONDS
+            ):
                 return
         self.last_key_press_time[key] = current_time
 
@@ -201,7 +211,7 @@ class GameEngine:
                     closest_arrow = arrow
 
         # 判定時機
-        if closest_arrow and closest_distance <= 80:
+        if closest_arrow and closest_distance <= MAX_HIT_DISTANCE:
             judgment, base_score = self.timing.check_timing(
                 closest_arrow.y, self.current_time, direction
             )
@@ -312,33 +322,59 @@ class GameEngine:
 
         pygame.display.flip()
 
+    def _render_text_centered(
+        self,
+        text: str,
+        font: pygame.font.Font,
+        color: tuple[int, int, int],
+        center: tuple[int, int],
+        alpha: Optional[int] = None,
+    ) -> None:
+        """繪製置中文字"""
+        surface = font.render(text, True, color)
+        if alpha is not None:
+            surface.set_alpha(alpha)
+        rect = surface.get_rect(center=center)
+        self.screen.blit(surface, rect)
+
+    def _render_text_at(
+        self,
+        text: str,
+        font: pygame.font.Font,
+        color: tuple[int, int, int],
+        position: tuple[int, int],
+    ) -> None:
+        """繪製指定座標文字"""
+        surface = font.render(text, True, color)
+        self.screen.blit(surface, position)
+
     def _draw_menu(self) -> None:
         """繪製選單"""
         # 標題
         title_text = "Dance Game"
-        title_surface = self.font_large.render(title_text, True, WHITE)
-        title_rect = title_surface.get_rect(center=(WINDOW_WIDTH // 2, 150))
-        self.screen.blit(title_surface, title_rect)
+        self._render_text_centered(
+            title_text, self.font_large, WHITE, (WINDOW_WIDTH // 2, 150)
+        )
 
         # 難度選擇
         easy_text = "1. Easy Mode"
-        easy_surface = self.font_medium.render(easy_text, True, WHITE)
-        easy_rect = easy_surface.get_rect(center=(WINDOW_WIDTH // 2, 300))
-        self.screen.blit(easy_surface, easy_rect)
+        self._render_text_centered(
+            easy_text, self.font_medium, WHITE, (WINDOW_WIDTH // 2, 300)
+        )
 
         normal_text = "2. Normal Mode"
-        normal_surface = self.font_medium.render(normal_text, True, WHITE)
-        normal_rect = normal_surface.get_rect(center=(WINDOW_WIDTH // 2, 350))
-        self.screen.blit(normal_surface, normal_rect)
+        self._render_text_centered(
+            normal_text, self.font_medium, WHITE, (WINDOW_WIDTH // 2, 350)
+        )
 
         # 操作說明
         instructions = ["Use Arrow Keys to Play", "ESC to Pause", "ESC in Menu to Quit"]
 
         y_offset = 450
         for instruction in instructions:
-            inst_surface = self.font_small.render(instruction, True, GRAY)
-            inst_rect = inst_surface.get_rect(center=(WINDOW_WIDTH // 2, y_offset))
-            self.screen.blit(inst_surface, inst_rect)
+            self._render_text_centered(
+                instruction, self.font_small, GRAY, (WINDOW_WIDTH // 2, y_offset)
+            )
             y_offset += 30
 
     def _draw_game(self) -> None:
@@ -354,9 +390,7 @@ class GameEngine:
                 ghost_img = pygame.transform.scale(
                     img, (ARROW_WIDTH, ARROW_HEIGHT)
                 ).copy()
-                ghost_img.fill(
-                    (100, 100, 100, 128), special_flags=pygame.BLEND_RGBA_MULT
-                )
+                ghost_img.fill(GHOST_ARROW_RGBA, special_flags=pygame.BLEND_RGBA_MULT)
                 self.screen.blit(
                     ghost_img,
                     (x - ARROW_WIDTH // 2, JUDGMENT_LINE_Y - ARROW_HEIGHT // 2),
@@ -376,62 +410,57 @@ class GameEngine:
         """繪製判定回饋"""
         for feedback in self.timing.feedback_messages:
             age = self.current_time - feedback["time"]
-            alpha = max(0, 1 - age / 0.5)  # 淡出效果
+            alpha = max(0, 1 - age / FEEDBACK_FADE_SECONDS)  # 淡出效果
 
             if alpha > 0:
                 text = feedback["text"]
                 color = feedback["color"]
 
-                # 建立半透明表面
-                text_surface = self.font_large.render(text, True, color)
-                text_surface.set_alpha(int(alpha * 255))
-
                 # 繪製在判定線附近
-                text_rect = text_surface.get_rect(
-                    center=(WINDOW_WIDTH // 2, JUDGMENT_LINE_Y - 50)
+                self._render_text_centered(
+                    text,
+                    self.font_large,
+                    color,
+                    (WINDOW_WIDTH // 2, JUDGMENT_LINE_Y - 50),
+                    alpha=int(alpha * 255),
                 )
-                self.screen.blit(text_surface, text_rect)
 
     def _draw_ui(self) -> None:
         """繪製UI介面"""
         # 分數
         score_text = f"Score: {self.score.total_score}"
-        score_surface = self.font_medium.render(score_text, True, WHITE)
-        self.screen.blit(score_surface, (50, 50))
+        self._render_text_at(score_text, self.font_medium, WHITE, (50, 50))
 
         # 連擊
         combo_text = f"Combo: {self.score.combo}"
-        combo_surface = self.font_medium.render(combo_text, True, YELLOW)
-        self.screen.blit(combo_surface, (50, 90))
+        self._render_text_at(combo_text, self.font_medium, YELLOW, (50, 90))
 
         # 難度
         difficulty_text = f"Difficulty: {self.difficulty.get_difficulty_name()}"
-        difficulty_surface = self.font_small.render(difficulty_text, True, WHITE)
-        self.screen.blit(difficulty_surface, (50, 130))
+        self._render_text_at(difficulty_text, self.font_small, WHITE, (50, 130))
 
         # 準確率
         accuracy = self.score.get_accuracy()
         accuracy_text = f"Accuracy: {accuracy:.1f}%"
-        accuracy_surface = self.font_small.render(accuracy_text, True, WHITE)
-        self.screen.blit(accuracy_surface, (50, 160))
+        self._render_text_at(accuracy_text, self.font_small, WHITE, (50, 160))
 
         self._draw_combo_effects()
 
     def _draw_combo_effects(self) -> None:
         for effect in self.score.combo_effects:
             age = self.current_time - effect["time"]
-            alpha = max(0, 1 - age / 2.0)
+            alpha = max(0, 1 - age / COMBO_EFFECT_FADE_SECONDS)
 
             if alpha > 0:
                 text = f"{effect['combo']} COMBO!"
-                text_surface = self.font_medium.render(text, True, YELLOW)
-                text_surface.set_alpha(int(alpha * 255))
-
-                y_offset = int(age * 20)
-                text_rect = text_surface.get_rect(
-                    center=(WINDOW_WIDTH - 120, 80 - y_offset)
+                y_offset = int(age * COMBO_FLOAT_SPEED)
+                self._render_text_centered(
+                    text,
+                    self.font_medium,
+                    YELLOW,
+                    (WINDOW_WIDTH - 120, 80 - y_offset),
+                    alpha=int(alpha * 255),
                 )
-                self.screen.blit(text_surface, text_rect)
 
     def _draw_background(self) -> None:
         """繪製復古像素背景"""
@@ -452,46 +481,49 @@ class GameEngine:
         """繪製暫停覆蓋層"""
         # 半透明背景
         overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-        overlay.set_alpha(128)
+        overlay.set_alpha(PAUSE_OVERLAY_ALPHA)
         overlay.fill(BLACK)
         self.screen.blit(overlay, (0, 0))
 
         # 暫停文字
         pause_text = "GAME PAUSED"
-        pause_surface = self.font_large.render(pause_text, True, WHITE)
-        pause_rect = pause_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50)
+        self._render_text_centered(
+            pause_text,
+            self.font_large,
+            WHITE,
+            (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50),
         )
-        self.screen.blit(pause_surface, pause_rect)
 
         # 操作提示
         resume_text = "ESC to Resume"
-        resume_surface = self.font_medium.render(resume_text, True, WHITE)
-        resume_rect = resume_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20)
+        self._render_text_centered(
+            resume_text,
+            self.font_medium,
+            WHITE,
+            (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20),
         )
-        self.screen.blit(resume_surface, resume_rect)
 
         quit_text = "Q to Menu"
-        quit_surface = self.font_medium.render(quit_text, True, WHITE)
-        quit_rect = quit_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 60)
+        self._render_text_centered(
+            quit_text,
+            self.font_medium,
+            WHITE,
+            (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 60),
         )
-        self.screen.blit(quit_surface, quit_rect)
 
     def _draw_game_over(self) -> None:
         """繪製遊戲結束畫面"""
         # 遊戲結束文字
         game_over_text = "GAME OVER"
-        game_over_surface = self.font_large.render(game_over_text, True, WHITE)
-        game_over_rect = game_over_surface.get_rect(center=(WINDOW_WIDTH // 2, 200))
-        self.screen.blit(game_over_surface, game_over_rect)
+        self._render_text_centered(
+            game_over_text, self.font_large, WHITE, (WINDOW_WIDTH // 2, 200)
+        )
 
         # 最終分數
         final_score_text = f"Final Score: {self.score.total_score}"
-        final_score_surface = self.font_medium.render(final_score_text, True, YELLOW)
-        final_score_rect = final_score_surface.get_rect(center=(WINDOW_WIDTH // 2, 280))
-        self.screen.blit(final_score_surface, final_score_rect)
+        self._render_text_centered(
+            final_score_text, self.font_medium, YELLOW, (WINDOW_WIDTH // 2, 280)
+        )
 
         # 統計資訊
         stats = self.score.get_score_breakdown()
@@ -505,21 +537,21 @@ class GameEngine:
 
         y_offset = 340
         for stat in stats_text:
-            stat_surface = self.font_small.render(stat, True, WHITE)
-            stat_rect = stat_surface.get_rect(center=(WINDOW_WIDTH // 2, y_offset))
-            self.screen.blit(stat_surface, stat_rect)
+            self._render_text_centered(
+                stat, self.font_small, WHITE, (WINDOW_WIDTH // 2, y_offset)
+            )
             y_offset += 30
 
         # 操作提示
         restart_text = "ENTER to Restart"
-        restart_surface = self.font_medium.render(restart_text, True, WHITE)
-        restart_rect = restart_surface.get_rect(center=(WINDOW_WIDTH // 2, 500))
-        self.screen.blit(restart_surface, restart_rect)
+        self._render_text_centered(
+            restart_text, self.font_medium, WHITE, (WINDOW_WIDTH // 2, 500)
+        )
 
         menu_text = "ESC to Menu"
-        menu_surface = self.font_medium.render(menu_text, True, WHITE)
-        menu_rect = menu_surface.get_rect(center=(WINDOW_WIDTH // 2, 540))
-        self.screen.blit(menu_surface, menu_rect)
+        self._render_text_centered(
+            menu_text, self.font_medium, WHITE, (WINDOW_WIDTH // 2, 540)
+        )
 
     def _start_game(self) -> None:
         """開始新遊戲"""

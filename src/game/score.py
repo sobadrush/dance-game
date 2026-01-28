@@ -4,34 +4,25 @@
 """
 
 from typing import Dict, List, Tuple, Union
-import time
 
 
 class Score:
     """計分系統類別"""
 
-    def __init__(self):
-        self.total_score = 0
-        self.combo = 0
-        self.max_combo = 0
-        self.perfect_count = 0
-        self.good_count = 0
-        self.miss_count = 0
+    COMBO_BONUS_THRESHOLD = 10  # 每10連擊給予獎勵
+    COMBO_BONUS_SCORE = 50  # 連擊獎勵分數
+    SCORE_HISTORY_LIMIT = 100
+    SCORE_HISTORY_TRUNCATE = 50
+    COMBO_EFFECT_DURATION = 2.0
+    PERCENTAGE_MULTIPLIER = 100.0
 
+    def __init__(self):
         # 分數歷史記錄
         self.score_history: List[Dict] = []
-
-        # 連擊獎勵設定
-        self.combo_bonus_threshold = 10  # 每10連擊給予獎勵
-        self.combo_bonus_score = 50  # 連擊獎勵分數
-
-        # 統計資訊
-        self.total_arrows = 0
-        self.hit_arrows = 0
-
-        # 特殊效果
+        self.combo_effects: List[Dict] = []
         self.last_combo_time = 0
-        self.combo_effects = []
+
+        self.reset()
 
     def add_score(
         self, judgment: str, base_score: int, current_game_time: float
@@ -70,8 +61,8 @@ class Score:
         self.total_score += actual_score
 
         # 連擊獎勵計算
-        if self.combo > 0 and self.combo % self.combo_bonus_threshold == 0:
-            self.total_score += self.combo_bonus_score
+        if self.combo > 0 and self.combo % self.COMBO_BONUS_THRESHOLD == 0:
+            self.total_score += self.COMBO_BONUS_SCORE
             combo_milestone = True
 
         # 每次正向連擊都觸發特效
@@ -110,14 +101,14 @@ class Score:
         )
 
         # 限制歷史記錄長度
-        if len(self.score_history) > 100:
-            self.score_history = self.score_history[-50:]
+        if len(self.score_history) > self.SCORE_HISTORY_LIMIT:
+            self.score_history = self.score_history[-self.SCORE_HISTORY_TRUNCATE :]
 
     def get_accuracy(self) -> float:
         """計算準確率"""
         if self.total_arrows == 0:
             return 0.0
-        return (self.hit_arrows / self.total_arrows) * 100.0
+        return (self.hit_arrows / self.total_arrows) * self.PERCENTAGE_MULTIPLIER
 
     def get_score_breakdown(self) -> Dict[str, Union[int, float]]:
         """取得分數詳細資訊"""
@@ -149,5 +140,6 @@ class Score:
         self.combo_effects = [
             effect
             for effect in self.combo_effects
-            if current_time - effect["time"] < 2.0  # 2秒後移除特效
+            if current_time - effect["time"]
+            < self.COMBO_EFFECT_DURATION  # 2秒後移除特效
         ]

@@ -5,11 +5,24 @@
 
 import pygame
 from typing import Tuple, Optional
-from .constants import ARROW_WIDTH, ARROW_HEIGHT, GAME_AREA_X, GAME_AREA_WIDTH
+from .constants import (
+    ARROW_HEIGHT,
+    ARROW_INDICATOR_INNER,
+    ARROW_INDICATOR_LONG,
+    ARROW_INDICATOR_SHORT,
+    ARROW_WIDTH,
+)
 
 
 class Arrow:
     """跳舞機遊戲中的箭頭物件"""
+
+    DIRECTION_COLORS = {
+        "LEFT": (64, 128, 255),
+        "DOWN": (255, 255, 64),
+        "UP": (64, 255, 128),
+        "RIGHT": (192, 64, 255),
+    }
 
     def __init__(
         self,
@@ -34,13 +47,7 @@ class Arrow:
             self.image = pygame.transform.scale(image, (self.width, self.height))
 
         # 根據方向設定回退顏色
-        self.colors = {
-            "LEFT": (64, 128, 255),  # 藍色
-            "DOWN": (255, 255, 64),  # 黃色
-            "UP": (64, 255, 128),  # 綠色
-            "RIGHT": (192, 64, 255),  # 紫色
-        }
-        self.color = self.colors.get(direction, (255, 255, 255))
+        self.color = self.DIRECTION_COLORS.get(direction, (255, 255, 255))
 
     def update(self, dt: float) -> None:
         """更新箭頭位置"""
@@ -52,22 +59,10 @@ class Arrow:
         if not self.hit:
             if self.image:
                 # 繪製圖片
-                screen.blit(
-                    self.image,
-                    (self.x - self.width // 2, self.y - self.height // 2),
-                )
+                screen.blit(self.image, self.get_rect().topleft)
             else:
                 # 繪製回退矩形
-                pygame.draw.rect(
-                    screen,
-                    self.color,
-                    (
-                        self.x - self.width // 2,
-                        self.y - self.height // 2,
-                        self.width,
-                        self.height,
-                    ),
-                )
+                pygame.draw.rect(screen, self.color, self.get_rect())
                 # 繪製方向指示
                 self._draw_arrow_indicator(screen)
 
@@ -79,34 +74,34 @@ class Arrow:
         if self.direction == "LEFT":
             # 向左箭頭
             points = [
-                (center_x + 20, center_y),
-                (center_x - 20, center_y),
-                (center_x - 5, center_y - 15),
-                (center_x - 5, center_y + 15),
+                (center_x + ARROW_INDICATOR_LONG, center_y),
+                (center_x - ARROW_INDICATOR_LONG, center_y),
+                (center_x - ARROW_INDICATOR_INNER, center_y - ARROW_INDICATOR_SHORT),
+                (center_x - ARROW_INDICATOR_INNER, center_y + ARROW_INDICATOR_SHORT),
             ]
         elif self.direction == "RIGHT":
             # 向右箭頭
             points = [
-                (center_x - 20, center_y),
-                (center_x + 20, center_y),
-                (center_x + 5, center_y - 15),
-                (center_x + 5, center_y + 15),
+                (center_x - ARROW_INDICATOR_LONG, center_y),
+                (center_x + ARROW_INDICATOR_LONG, center_y),
+                (center_x + ARROW_INDICATOR_INNER, center_y - ARROW_INDICATOR_SHORT),
+                (center_x + ARROW_INDICATOR_INNER, center_y + ARROW_INDICATOR_SHORT),
             ]
         elif self.direction == "UP":
             # 向上箭頭
             points = [
-                (center_x, center_y + 20),
-                (center_x, center_y - 20),
-                (center_x - 15, center_y - 5),
-                (center_x + 15, center_y - 5),
+                (center_x, center_y + ARROW_INDICATOR_LONG),
+                (center_x, center_y - ARROW_INDICATOR_LONG),
+                (center_x - ARROW_INDICATOR_SHORT, center_y - ARROW_INDICATOR_INNER),
+                (center_x + ARROW_INDICATOR_SHORT, center_y - ARROW_INDICATOR_INNER),
             ]
         else:  # DOWN
             # 向下箭頭
             points = [
-                (center_x, center_y - 20),
-                (center_x, center_y + 20),
-                (center_x - 15, center_y + 5),
-                (center_x + 15, center_y + 5),
+                (center_x, center_y - ARROW_INDICATOR_LONG),
+                (center_x, center_y + ARROW_INDICATOR_LONG),
+                (center_x - ARROW_INDICATOR_SHORT, center_y + ARROW_INDICATOR_INNER),
+                (center_x + ARROW_INDICATOR_SHORT, center_y + ARROW_INDICATOR_INNER),
             ]
 
         pygame.draw.polygon(screen, (0, 0, 0), points)
@@ -119,5 +114,5 @@ class Arrow:
 
     def is_out_of_bounds(self, screen_height: int) -> bool:
         """檢查箭頭是否超出螢幕範圍"""
-        arrow_top = self.y - self.height // 2
+        arrow_top = self.get_rect().top
         return arrow_top < 0 or self.y > screen_height
