@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dance Game 程式碼審查報告</title>
+    <style>
+        /* === 全域樣式與重置 === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 深色專業風格色彩系統 */
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1f2937;
+            --bg-code: #0d1117;
+
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+
+            --border-default: #30363d;
+            --border-muted: #21262d;
+
+            --accent-primary: #58a6ff;
+            --accent-secondary: #79c0ff;
+            --accent-success: #3fb950;
+            --accent-warning: #d29922;
+            --accent-danger: #f85149;
+            --accent-info: #a371f7;
+
+            --severity-critical: #f85149;
+            --severity-high: #ff8c42;
+            --severity-medium: #d29922;
+            --severity-low: #58a6ff;
+            --severity-info: #8b949e;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Helvetica', 'Arial', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* === 頁首區域 === */
+        .header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--accent-primary);
+        }
+
+        .header .meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .header .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header .meta-item strong {
+            color: var(--text-primary);
+        }
+
+        /* === 執行摘要區域 === */
+        .summary-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .summary-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-default);
+            padding-bottom: 12px;
+        }
+
+        .score-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .score-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-muted);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .score-card .label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .score-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .score-card.overall .value {
+            color: var(--accent-primary);
+        }
+
+        /* === 統計圖表區域 === */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-muted);
+            border-radius: var(--radius-md);
+            padding: 20px;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .severity-bar {
+            margin-bottom: 12px;
+        }
+
+        .severity-bar-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .severity-bar-fill {
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .severity-bar-progress {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .severity-bar-progress.critical {
+            background: var(--severity-critical);
+        }
+
+        .severity-bar-progress.high {
+            background: var(--severity-high);
+        }
+
+        .severity-bar-progress.medium {
+            background: var(--severity-medium);
+        }
+
+        .severity-bar-progress.low {
+            background: var(--severity-low);
+        }
+
+        .severity-bar-progress.info {
+            background: var(--severity-info);
+        }
+
+        /* === 問題清單區域 === */
+        .issues-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .issue-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-top: none;
+            padding: 24px;
+        }
+
+        .issue-card:last-child {
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+
+        .issue-card+.issue-card {
+            border-top: 1px dashed var(--border-muted);
+        }
+
+        .issue-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .issue-severity {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .issue-severity.critical {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--severity-critical);
+            border: 1px solid var(--severity-critical);
+        }
+
+        .issue-severity.high {
+            background: rgba(255, 140, 66, 0.15);
+            color: var(--severity-high);
+            border: 1px solid var(--severity-high);
+        }
+
+        .issue-severity.medium {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--severity-medium);
+            border: 1px solid var(--severity-medium);
+        }
+
+        .issue-severity.low {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--severity-low);
+            border: 1px solid var(--severity-low);
+        }
+
+        .issue-severity.info {
+            background: rgba(139, 148, 158, 0.15);
+            color: var(--severity-info);
+            border: 1px solid var(--severity-info);
+        }
+
+        .issue-title {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .issue-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .issue-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .issue-description {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.7;
+        }
+
+        .issue-location {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-muted);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent-secondary);
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        /* === 程式碼區塊 === */
+        .code-block {
+            margin: 16px 0;
+            background: var(--bg-code);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-default);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .code-lang {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        pre {
+            margin: 0;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            display: block;
+            color: var(--text-primary);
+        }
+
+        /* Prism.js Okaidia Theme */
+        code[class*=language-],
+        pre[class*=language-] {
+            color: #f8f8f2;
+            background: 0 0;
+            text-shadow: 0 1px rgba(0, 0, 0, .3);
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            font-size: 1em;
+            text-align: left;
+            white-space: pre;
+            word-spacing: normal;
+            word-break: normal;
+            word-wrap: normal;
+            line-height: 1.5;
+            -moz-tab-size: 4;
+            -o-tab-size: 4;
+            tab-size: 4;
+            -webkit-hyphens: none;
+            -moz-hyphens: none;
+            -ms-hyphens: none;
+            hyphens: none
+        }
+
+        pre[class*=language-] {
+            padding: 1em;
+            margin: .5em 0;
+            overflow: auto;
+            border-radius: .3em
+        }
+
+        :not(pre)>code[class*=language-],
+        pre[class*=language-] {
+            background: var(--bg-code)
+        }
+
+        :not(pre)>code[class*=language-] {
+            padding: .1em;
+            border-radius: .3em;
+            white-space: normal
+        }
+
+        .token.cdata,
+        .token.comment,
+        .token.doctype,
+        .token.prolog {
+            color: #8292a2
+        }
+
+        .token.punctuation {
+            color: #f8f8f2
+        }
+
+        .token.namespace {
+            opacity: .7
+        }
+
+        .token.constant,
+        .token.deleted,
+        .token.property,
+        .token.symbol,
+        .token.tag {
+            color: #f92672
+        }
+
+        .token.boolean,
+        .token.number {
+            color: #ae81ff
+        }
+
+        .token.attr-name,
+        .token.builtin,
+        .token.char,
+        .token.inserted,
+        .token.selector,
+        .token.string {
+            color: #a6e22e
+        }
+
+        .language-css .token.string,
+        .style .token.string,
+        .token.entity,
+        .token.operator,
+        .token.url,
+        .token.variable {
+            color: #f8f8f2
+        }
+
+        .token.atrule,
+        .token.attr-value,
+        .token.class-name,
+        .token.function {
+            color: #e6db74
+        }
+
+        .token.keyword {
+            color: #66d9ef
+        }
+
+        .token.important,
+        .token.regex {
+            color: #fd971f
+        }
+
+        .token.bold,
+        .token.important {
+            font-weight: 700
+        }
+
+        .token.italic {
+            font-style: italic
+        }
+
+        .token.entity {
+            cursor: help
+        }
+
+        /* 行號 */
+        .line-numbers {
+            counter-reset: line;
+        }
+
+        .line-numbers .line {
+            counter-increment: line;
+            position: relative;
+            padding-left: 48px;
+        }
+
+        .line-numbers .line::before {
+            content: counter(line);
+            position: absolute;
+            left: 0;
+            width: 36px;
+            text-align: right;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .line-numbers .line.highlight {
+            background: rgba(255, 140, 66, 0.15);
+            border-left: 3px solid var(--severity-high);
+            padding-left: 45px;
+        }
+
+        /* === 建議修改區域 === */
+        .suggestion-block {
+            margin-top: 12px;
+            background: rgba(63, 185, 80, 0.1);
+            border: 1px solid rgba(63, 185, 80, 0.3);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .suggestion-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-success);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .suggestion-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* === 設計模式標籤 === */
+        .pattern-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+
+        .pattern-tag {
+            background: rgba(163, 113, 247, 0.15);
+            border: 1px solid var(--accent-info);
+            color: var(--accent-info);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* === 列印樣式 === */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .header,
+            .summary-section,
+            .issue-card {
+                page-break-inside: avoid;
+                box-shadow: none;
+            }
+
+            .code-block {
+                page-break-inside: avoid;
+            }
+
+            pre {
+                white-space: pre-wrap;
+            }
+        }
+
+        /* === 響應式設計 === */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .score-overview {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .issue-header {
+                flex-direction: column;
+            }
+
+            .code-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+        }
+
+        /* === 工具提示 === */
+        [title] {
+            cursor: help;
+            border-bottom: 1px dotted var(--text-muted);
+        }
+
+        /* === 滾動條樣式 === */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: var(--radius-sm);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 報告頁首 -->
+        <header class="header">
+            <h1>Dance Game 程式碼審查報告</h1>
+            <div class="meta">
+                <div class="meta-item">
+                    <strong>專案:</strong> dance-game
+                </div>
+                <div class="meta-item">
+                    <strong>產生時間:</strong> 2026-01-28 22:32:35
+                </div>
+                <div class="meta-item">
+                    <strong>審查類型:</strong> Python Code Review (pygame)
+                </div>
+                <div class="meta-item">
+                    <strong>審查範圍:</strong> src/game, src/utils, tests, scripts
+                </div>
+            </div>
+        </header>
+
+        <!-- 執行摘要 -->
+        <section class="summary-section">
+            <h2>📊 執行摘要</h2>
+
+            <div class="score-overview">
+                <div class="score-card overall">
+                    <div class="label">整體評分</div>
+                    <div class="value">78/100</div>
+                </div>
+                <div class="score-card">
+                    <div class="label">檔案數量</div>
+                    <div class="value">19</div>
+                </div>
+                <div class="score-card">
+                    <div class="label">程式碼行數</div>
+                    <div class="value">2,457</div>
+                </div>
+                <div class="score-card">
+                    <div class="label">發現問題</div>
+                    <div class="value">10</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>嚴重程度分布</h3>
+                    
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>嚴重</span>
+                <span><strong>0</strong> (0.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress critical" style="width: 0.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>高</span>
+                <span><strong>2</strong> (20.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress high" style="width: 20.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>中</span>
+                <span><strong>5</strong> (50.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress medium" style="width: 50.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>低</span>
+                <span><strong>3</strong> (30.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress low" style="width: 30.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>資訊</span>
+                <span><strong>0</strong> (0.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 0.0%"></div>
+            </div>
+        </div>
+        
+                </div>
+                <div class="stat-card">
+                    <h3>問題類別分布</h3>
+                    
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>測試穩定性</span>
+                <span><strong>1</strong> (10.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 10.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>穩定性/相容性</span>
+                <span><strong>1</strong> (10.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 10.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>架構/設定一致性</span>
+                <span><strong>1</strong> (10.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 10.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>遊戲邏輯/一致性</span>
+                <span><strong>1</strong> (10.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 10.0%"></div>
+            </div>
+        </div>
+        
+
+        <div class="severity-bar">
+            <div class="severity-bar-header">
+                <span>效能</span>
+                <span><strong>1</strong> (10.0%)</span>
+            </div>
+            <div class="severity-bar-fill">
+                <div class="severity-bar-progress info" style="width: 10.0%"></div>
+            </div>
+        </div>
+        
+                </div>
+            </div>
+
+            <div
+                style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-top: 16px;">
+                <strong style="color: var(--accent-primary);">關鍵發現:</strong>
+                <p style="color: var(--text-secondary); margin-top: 8px; line-height: 1.7;">
+                    架構模組化清楚，遊戲邏輯/資源/配置分離良好；但測試與 API 簽名不一致造成測試失敗，音效初始化缺乏容錯影響可用性。另有多處配置與難度參數未落地、效能與統計一致性可再改善。
+                </p>
+            </div>
+        </section>
+
+        <!-- 詳細問題清單 -->
+        
+    <section class="issues-section" id="issues-high">
+        <div class="section-title">🟠 高優先級問題 (2)</div>
+        
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity high">HIGH</span>
+            <div class="issue-title">測試呼叫與 Score API 簽名不一致，測試直接失敗</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 測試穩定性
+            </div>
+        </div>
+        <div class="issue-location">📍 tests/test_score.py:25</div>
+        <div class="issue-description">Score.add_score 需要 current_game_time 參數，但測試僅傳入 2 個引數，會觸發 TypeError，導致測試無法執行。</div>
+        <div class="pattern-tags"><span class="pattern-tag">契約一致性</span></div>
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">added_score, combo_milestone = self.score.add_score(&quot;PERFECT&quot;, 100)</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">測試補上時間參數，或為 add_score 提供預設值以維持相容性。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">added_score, combo_milestone = self.score.add_score(&quot;PERFECT&quot;, 100, time.time())</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity high">HIGH</span>
+            <div class="issue-title">音效初始化缺乏容錯，無音訊環境可能直接崩潰</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 穩定性/相容性
+            </div>
+        </div>
+        <div class="issue-location">📍 src/utils/asset_loader.py:21</div>
+        <div class="issue-description">AssetLoader 在建構時直接呼叫 pygame.mixer.init，無例外處理；在 CI 或無音效裝置環境常見崩潰。</div>
+        <div class="pattern-tags"><span class="pattern-tag">Fail-Safe</span></div>
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">加入 try/except 與 audio_enabled 旗標，並在 AudioManager/AssetLoader 使用前檢查或降級為靜音模式。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">try:</div>
+<div class="line">    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)</div>
+<div class="line">    self.audio_enabled = True</div>
+<div class="line">except pygame.error:</div>
+<div class="line">    self.audio_enabled = False</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+    </section>
+    
+
+    <section class="issues-section" id="issues-medium">
+        <div class="section-title">🟡 中優先級問題 (5)</div>
+        
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity medium">MEDIUM</span>
+            <div class="issue-title">顯示與控制設定未套用，配置檔形同無效</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 架構/設定一致性
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/engine.py:50</div>
+        <div class="issue-description">Config 已提供 display/controls，但 GameEngine 仍使用常數與硬編按鍵對應，導致設定無法生效。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">改以 Config 讀取 window/fps 與 key_bindings，並統一由設定驅動。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">display = self.config.get_display_config()</div>
+<div class="line">self.screen = pygame.display.set_mode((display.get(&quot;window_width&quot;, WINDOW_WIDTH), display.get(&quot;window_height&quot;, WINDOW_HEIGHT)))</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity medium">MEDIUM</span>
+            <div class="issue-title">難度參數（判定窗口/密度）未接入判定與生成邏輯</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 遊戲邏輯/一致性
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/difficulty.py:29</div>
+        <div class="issue-description">Difficulty 定義 judgment_window/arrow_density，但 Timing 與生成邏輯未使用，難度調整效果不完整。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">&quot;judgment_window&quot;: 1.2,</div>
+<div class="line highlight">&quot;arrow_density&quot;: 0.7,</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">將 judgment_window 乘到判定範圍，或以 arrow_density 影響生成頻率。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">window = self.difficulty.get_judgment_window_multiplier()</div>
+<div class="line">if distance &lt;= PERFECT_RANGE * window: ...</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity medium">MEDIUM</span>
+            <div class="issue-title">每幀建立半透明箭頭影像，造成不必要的 CPU/GPU 開銷</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 效能
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/engine.py:89</div>
+        <div class="issue-description">_draw_game 中每幀對每個方向做 scale+copy+fill；可在初始化階段快取 ghost 圖片。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">ghost_img = pygame.transform.scale(img, (ARROW_WIDTH, ARROW_HEIGHT)).copy()</div>
+<div class="line highlight">ghost_img.fill(GHOST_ARROW_RGBA, special_flags=pygame.BLEND_RGBA_MULT)</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">在 __init__ 產生 ghost 版本並快取，繪製時直接 blit。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">self.ghost_images[direction] = ghost_img  # init 時建立一次</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity medium">MEDIUM</span>
+            <div class="issue-title">Miss 事件未寫入 score_history，統計資料不完整</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 正確性/可觀測性
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/score.py:55</div>
+        <div class="issue-description">MISS/MISS_FAR 會提前 return，導致 score_history 不包含 miss 紀錄，後續分析/重播資料不完整。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">elif judgment == &quot;MISS&quot; or judgment == &quot;MISS_FAR&quot;:</div>
+<div class="line">    self.miss_count += 1</div>
+<div class="line">    self._reset_combo()</div>
+<div class="line highlight">    return (0, False)</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">改為先記錄 score_history，再根據判定類型更新分數。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">self._record_score_history(judgment, 0, current_game_time)</div>
+<div class="line">self._reset_combo()</div>
+<div class="line">return (0, False)</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity medium">MEDIUM</span>
+            <div class="issue-title">暫停時遊戲時間仍前進，回饋/特效在暫停期間消失</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 遊戲體驗
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/engine.py:100</div>
+        <div class="issue-description">current_time 每幀累加，且回饋/特效更新不受狀態影響，導致暫停時視覺回饋持續衰退。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">dt = self.clock.tick(FPS) / 1000.0</div>
+<div class="line highlight">self.current_time += dt</div>
+<div class="line">...</div>
+<div class="line highlight">self.timing.update_feedback(self.current_time)</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">將 game_time 與 real_time 分離，或僅在 PLAYING 時推進/更新回饋。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">if self.game_state == GameState[&quot;PLAYING&quot;]:</div>
+<div class="line">    self.current_time += dt</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+    </section>
+    
+
+    <section class="issues-section" id="issues-low">
+        <div class="section-title">🔵 低優先級問題 (3)</div>
+        
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity low">LOW</span>
+            <div class="issue-title">COOLDOWN 判定未在計分層處理，可能影響命中統計</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 正確性
+            </div>
+        </div>
+        <div class="issue-location">📍 src/game/timing.py:46</div>
+        <div class="issue-description">Timing 可能回傳 COOLDOWN，Score.add_score 未處理此類型；若觸發會增加 total_arrows 但不計入命中/失誤。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">if current_time - self.last_judgment_time[direction] &lt; self.cooldown_time:</div>
+<div class="line highlight">    return &quot;COOLDOWN&quot;, 0</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">在引擎層過濾 COOLDOWN，或在 Score.add_score 直接忽略。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">if judgment == &quot;COOLDOWN&quot;:</div>
+<div class="line">    return (0, False)</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity low">LOW</span>
+            <div class="issue-title">create_sounds.py 依賴 numpy 未在專案依賴中宣告</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 依賴管理
+            </div>
+        </div>
+        <div class="issue-location">📍 create_sounds.py:6</div>
+        <div class="issue-description">腳本使用 numpy 但 pyproject.toml 未列入依賴，會導致腳本在乾淨環境無法執行。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">import numpy as np</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">在 pyproject.toml 新增 optional/dev 依賴，或於 README 指出腳本需要 numpy。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">dependencies = [&quot;pygame&gt;=2.6.1&quot;, &quot;pytest&gt;=9.0.2&quot;, &quot;numpy&gt;=1.26&quot;]</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+
+    <div class="issue-card">
+        <div class="issue-header">
+            <span class="issue-severity low">LOW</span>
+            <div class="issue-title">資源修正腳本使用硬編絕對路徑，無法跨機器執行</div>
+        </div>
+        <div class="issue-meta">
+            <div class="issue-meta-item">
+                <strong>類別:</strong> 可攜性
+            </div>
+        </div>
+        <div class="issue-location">📍 scripts/fix_transparency.py:36</div>
+        <div class="issue-description">fix_transparency.py 將 base_dir 寫死為本機路徑，其他環境無法復用。</div>
+        
+        
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">問題程式碼</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line highlight">base_dir = &quot;/Users/roger/Desktop/testOpencode_antigravity/dance-game/src/assets/images/arrows&quot;</div></code></pre>
+    </div>
+    
+        
+        <div class="suggestion-block">
+            <div class="suggestion-label">💡 建議修改</div>
+            <div class="suggestion-text">改用 Path(__file__) 或 CLI 參數傳入目錄。</div>
+            
+    <div class="code-block">
+        <div class="code-header">
+            <span class="code-label">建議修改</span>
+            <span class="code-lang">python</span>
+        </div>
+        <pre><code class="language-python line-numbers"><div class="line">base_dir = Path(__file__).resolve().parents[1] / &quot;src/assets/images/arrows&quot;</div></code></pre>
+    </div>
+    
+        </div>
+        
+    </div>
+    
+    </section>
+    
+
+        <!-- 設計模式分析 -->
+        
+        <section class="summary-section">
+            <h2>🎨 設計模式分析</h2>
+            <ul style="color: var(--text-secondary); line-height: 1.8;"><li><strong style="color: var(--accent-info);">Facade Pattern</strong>: GameEngine 統整輸入/更新/繪製流程，扮演系統入口與協調者角色。</li><li><strong style="color: var(--accent-info);">Caching/Registry Pattern</strong>: AssetLoader 以快取避免重複載入資源，降低 IO 成本。</li><li><strong style="color: var(--accent-info);">Configuration Manager</strong>: Config 集中管理遊戲設定，利於未來擴充（但需實際接入引擎）。</li></ul>
+        </section>
+        
+
+        <!-- 效能分析 -->
+        
+        <section class="summary-section">
+            <h2>⚡ 效能分析</h2>
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md);">
+                <p style="color: var(--text-secondary); line-height: 1.7;">
+                    主要效能負擔來自每幀圖像縮放與特效重建；可透過快取 ghost 圖片、減少每幀配置與 list.remove 改為過濾式更新，降低 CPU/GPU 與 GC 壓力。
+                </p>
+            </div>
+        </section>
+        
+
+        <!-- 安全性檢查 -->
+        
+        <section class="summary-section">
+            <h2>🔒 安全性檢查</h2>
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md);">
+                <p style="color: var(--text-secondary); line-height: 1.7;">
+                    未發現高風險安全漏洞；若未來開放載入外部配置或資源路徑，建議加入路徑白名單與格式驗證，以降低不可信輸入風險。
+                </p>
+            </div>
+        </section>
+        
+
+        <!-- 報告尾註 -->
+        <footer
+            style="margin-top: 48px; padding: 24px; text-align: center; color: var(--text-muted); border-top: 1px solid var(--border-default);">
+            <p>本報告由 java-code-review + review-reportor 自動生成</p>
+            <p style="font-size: 12px; margin-top: 8px;">© 2026 南山人壽數位科技中心</p>
+        </footer>
+    </div>
+
+    <!-- Prism.js 1.29.0 Core + Languages + Initialization -->
+    <script>
+        /* PrismJS Core */
+        var _self = "undefined" != typeof window ? window : "undefined" != typeof WorkerGlobalScope && self instanceof WorkerGlobalScope ? self : {}, Prism = function (l) { var n = /(?:^|\s)lang(?:uage)?-([\w-]+)(?=\s|$)/i, t = 0, e = {}, j = { manual: l.Prism && l.Prism.manual, disableWorkerMessageHandler: l.Prism && l.Prism.disableWorkerMessageHandler, util: { encode: function e(t) { return t instanceof C ? new C(t.type, e(t.content), t.alias) : Array.isArray(t) ? t.map(e) : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\u00a0/g, " ") }, type: function (e) { return Object.prototype.toString.call(e).slice(8, -1) }, objId: function (e) { return e.__id || Object.defineProperty(e, "__id", { value: ++t }), e.__id }, clone: function n(e, a) { var r, t; switch (a = a || {}, j.util.type(e)) { case "Object": if (t = j.util.objId(e), a[t]) return a[t]; for (var s in r = {}, a[t] = r, e) e.hasOwnProperty(s) && (r[s] = n(e[s], a)); return r; case "Array": return (t = j.util.objId(e), a[t]) ? a[t] : (r = [], a[t] = r, e.forEach(function (e, t) { r[t] = n(e, a) }), r); default: return e } }, getLanguage: function (e) { for (; e;) { var t = n.exec(e.className); if (t) return t[1].toLowerCase(); e = e.parentElement } return "none" }, setLanguage: function (e, t) { e.className = e.className.replace(RegExp(n, "gi"), ""), e.classList.add("language-" + t) }, currentScript: function () { if ("undefined" == typeof document) return null; if ("currentScript" in document) return document.currentScript; try { throw new Error } catch (e) { var t = (/at [^(\r\n]*\((.*):[^:]+:[^:]+\)$/i.exec(e.stack) || [])[1]; if (t) { var n, a = document.getElementsByTagName("script"); for (n in a) if (a[n].src == t) return a[n] } return null } }, isActive: function (e, t, n) { for (var a = "no-" + t; e;) { var r = e.classList; if (r.contains(t)) return !0; if (r.contains(a)) return !1; e = e.parentElement } return !!n } }, languages: { plain: e, plaintext: e, text: e, txt: e, extend: function (e, t) { var n, a = j.util.clone(j.languages[e]); for (n in t) a[n] = t[n]; return a }, insertBefore: function (n, e, t, a) { var r, s = (a = a || j.languages)[n], i = {}; for (r in s) if (s.hasOwnProperty(r)) { if (r == e) for (var o in t) t.hasOwnProperty(o) && (i[o] = t[o]); t.hasOwnProperty(r) || (i[r] = s[r]) } var l = a[n]; return a[n] = i, j.languages.DFS(j.languages, function (e, t) { t === l && e != n && (this[e] = i) }), i }, DFS: function e(t, n, a, r) { r = r || {}; var s, i, o, l = j.util.objId; for (s in t) t.hasOwnProperty(s) && (n.call(t, s, t[s], a || s), i = t[s], "Object" !== (o = j.util.type(i)) || r[l(i)] ? "Array" !== o || r[l(i)] || (r[l(i)] = !0, e(i, n, s, r)) : (r[l(i)] = !0, e(i, n, null, r))) } }, plugins: {}, highlightAll: function (e, t) { j.highlightAllUnder(document, e, t) }, highlightAllUnder: function (e, t, n) { var a = { callback: n, container: e, selector: 'code[class*="language-"], [class*="language-"] code, code[class*="lang-"], [class*="lang-"] code' }; j.hooks.run("before-highlightall", a), a.elements = Array.prototype.slice.apply(a.container.querySelectorAll(a.selector)), j.hooks.run("before-all-elements-highlight", a); for (var r, s = 0; r = a.elements[s++];)j.highlightElement(r, !0 === t, a.callback) }, highlightElement: function (e, t, n) { var a = j.util.getLanguage(e), r = j.languages[a], s = (j.util.setLanguage(e, a), e.parentElement); s && "pre" === s.nodeName.toLowerCase() && j.util.setLanguage(s, a); var i = { element: e, language: a, grammar: r, code: e.textContent }; function o(e) { i.highlightedCode = e, j.hooks.run("before-insert", i), i.element.innerHTML = i.highlightedCode, j.hooks.run("after-highlight", i), j.hooks.run("complete", i), n && n.call(i.element) } if (j.hooks.run("before-sanity-check", i), (s = i.element.parentElement) && "pre" === s.nodeName.toLowerCase() && !s.hasAttribute("tabindex") && s.setAttribute("tabindex", "0"), !i.code) return j.hooks.run("complete", i), void (n && n.call(i.element)); j.hooks.run("before-highlight", i), i.grammar ? t && l.Worker ? ((a = new Worker(j.filename)).onmessage = function (e) { o(e.data) }, a.postMessage(JSON.stringify({ language: i.language, code: i.code, immediateClose: !0 }))) : o(j.highlight(i.code, i.grammar, i.language)) : o(j.util.encode(i.code)) }, highlight: function (e, t, n) { e = { code: e, grammar: t, language: n }; if (j.hooks.run("before-tokenize", e), e.grammar) return e.tokens = j.tokenize(e.code, e.grammar), j.hooks.run("after-tokenize", e), C.stringify(j.util.encode(e.tokens), e.language); throw new Error('The language "' + e.language + '" has no grammar.') }, tokenize: function (e, t) { var n = t.rest; if (n) { for (var a in n) t[a] = n[a]; delete t.rest } for (var r = new u, s = (z(r, r.head, e), !function e(t, n, a, r, s, i) { for (var o in a) if (a.hasOwnProperty(o) && a[o]) { var l = a[o]; l = Array.isArray(l) ? l : [l]; for (var u = 0; u < l.length; ++u) { if (i && i.cause == o + "," + u) return; for (var g, c = l[u], d = c.inside, p = !!c.lookbehind, m = !!c.greedy, h = c.alias, f = (m && !c.pattern.global && (g = c.pattern.toString().match(/[imsuy]*$/)[0], c.pattern = RegExp(c.pattern.source, g + "g")), c.pattern || c), b = r.next, y = s; b !== n.tail && !(i && y >= i.reach); y += b.value.length, b = b.next) { var v = b.value; if (n.length > t.length) return; if (!(v instanceof C)) { var F, x = 1; if (m) { if (!(F = L(f, y, t, p)) || F.index >= t.length) break; var k = F.index, w = F.index + F[0].length, A = y; for (A += b.value.length; A <= k;)b = b.next, A += b.value.length; if (A -= b.value.length, y = A, b.value instanceof C) continue; for (var P = b; P !== n.tail && (A < w || "string" == typeof P.value); P = P.next)x++, A += P.value.length; x--, v = t.slice(y, A), F.index -= y } else if (!(F = L(f, 0, v, p))) continue; var k = F.index, $ = F[0], S = v.slice(0, k), E = v.slice(k + $.length), v = y + v.length, _ = (i && v > i.reach && (i.reach = v), b.prev), S = (S && (_ = z(n, _, S), y += S.length), O(n, _, x), new C(o, d ? j.tokenize($, d) : $, h, $)); b = z(n, _, S), E && z(n, b, E), 1 < x && ($ = { cause: o + "," + u, reach: v }, e(t, n, a, b.prev, y, $), i && $.reach > i.reach && (i.reach = $.reach)) } } } } }(e, r, t, r.head, 0), r), i = [], o = s.head.next; o !== s.tail;)i.push(o.value), o = o.next; return i }, hooks: { all: {}, add: function (e, t) { var n = j.hooks.all; n[e] = n[e] || [], n[e].push(t) }, run: function (e, t) { var n = j.hooks.all[e]; if (n && n.length) for (var a, r = 0; a = n[r++];)a(t) } }, Token: C }; function C(e, t, n, a) { this.type = e, this.content = t, this.alias = n, this.length = 0 | (a || "").length } function L(e, t, n, a) { e.lastIndex = t; t = e.exec(n); return t && a && t[1] && (e = t[1].length, t.index += e, t[0] = t[0].slice(e)), t } function u() { var e = { value: null, prev: null, next: null }, t = { value: null, prev: e, next: null }; e.next = t, this.head = e, this.tail = t, this.length = 0 } function z(e, t, n) { var a = t.next, n = { value: n, prev: t, next: a }; return t.next = n, a.prev = n, e.length++, n } function O(e, t, n) { for (var a = t.next, r = 0; r < n && a !== e.tail; r++)a = a.next; (t.next = a).prev = t, e.length -= r } if (l.Prism = j, C.stringify = function t(e, n) { if ("string" == typeof e) return e; var a; if (Array.isArray(e)) return a = "", e.forEach(function (e) { a += t(e, n) }), a; var r, s = { type: e.type, content: t(e.content, n), tag: "span", classes: ["token", e.type], attributes: {}, language: n }, e = e.alias, i = (e && (Array.isArray(e) ? Array.prototype.push.apply(s.classes, e) : s.classes.push(e)), j.hooks.run("wrap", s), ""); for (r in s.attributes) i += " " + r + '="' + (s.attributes[r] || "").replace(/"/g, "&quot;") + '"'; return "<" + s.tag + ' class="' + s.classes.join(" ") + '"' + i + ">" + s.content + "</" + s.tag + ">" }, !l.document) return l.addEventListener && (j.disableWorkerMessageHandler || l.addEventListener("message", function (e) { var e = JSON.parse(e.data), t = e.language, n = e.code, e = e.immediateClose; l.postMessage(j.highlight(n, j.languages[t], t)), e && l.close() }, !1)), j; var a, e = j.util.currentScript(); function r() { j.manual || j.highlightAll() } return e && (j.filename = e.src, e.hasAttribute("data-manual") && (j.manual = !0)), j.manual || ("loading" === (a = document.readyState) || "interactive" === a && e && e.defer ? document.addEventListener("DOMContentLoaded", r) : window.requestAnimationFrame ? window.requestAnimationFrame(r) : window.setTimeout(r, 16)), j }(_self); "undefined" != typeof module && module.exports && (module.exports = Prism), "undefined" != typeof global && (global.Prism = Prism), Prism.languages.markup = {
+            comment: {
+                pattern:/<!--(?:(?!<!--)[\s\S])*?-->/,greedy:!0},prolog:{pattern:/<\?[\s\S]+?\?>/,greedy:!0},doctype:{pattern:/<!DOCTYPE(?:[^>"'[\]]|"[^"]*"|'[^']*')+(?:\[(?:[^<"'\]]|"[^"]*"|'[^']*'|<(?!!--)|<!--(?:[^-]|-(?!->))*-->)*\]\s*)?>/i,greedy:!0,inside:{"internal-subset":{pattern:/(^[^\[]*\[)[\s\S]+(?=\]>$)/,lookbehind:!0,greedy:!0,inside:null},string:{pattern:/"[^"]*"|'[^']*'/,greedy:!0},punctuation:/^<!|>$|[[\]]/,"doctype-tag":/^DOCTYPE/i,name:/[^\s<>'"]+/}},cdata:{pattern:/<!\[CDATA\[[\s\S]*?\]\]>/i,greedy:!0},tag:{pattern:/<\/?(?!\d)[^\s>\/=$<%]+(?:\s(?:\s*[^\s>\/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s'">=]+(?=[\s>]))|(?=[\s/>])))+)?\s*\/?>/,greedy:!0,inside:{tag:{pattern:/^<\/?[^\s>\/]+/,inside:{punctuation:/^<\/?/,namespace:/^[^\s>\/:]+:/}},"special-attr":[],"attr-value":{pattern:/=\s*(?:"[^"]*"|'[^']*'|[^\s'">=]+)/,inside:{punctuation:[{pattern:/^=/,alias:"attr-equals"},{pattern:/^(\s*)["']|["']$/,lookbehind:!0}]}},punctuation:/\/?>/,"attr-name":{pattern:/[^\s>\/]+/,inside:{namespace:/^[^\s>\/:]+:/}}}},entity:[{pattern:/&[\da-z]{1,8};/i,alias:"named-entity"},/&#x?[\da-f]{1,8};/i]},Prism.languages.markup.tag.inside["attr-value"].inside.entity=Prism.languages.markup.entity,Prism.languages.markup.doctype.inside["internal-subset"].inside=Prism.languages.markup,Prism.hooks.add("wrap",function(e){"entity"===e.type&&(e.attributes.title=e.content.replace(/&amp;/,"&"))}),Object.defineProperty(Prism.languages.markup.tag,"addInlined",{value:function(e,t){var n={},n=(n["language-"+t]={pattern:/(^<!\[CDATA\[)[\s\S]+?(?=\]\]>$)/i,lookbehind:!0,inside:Prism.languages[t]},n.cdata=/^<!\[CDATA\[|\]\]>$/i,{"included-cdata":{pattern:/<!\[CDATA\[[\s\S]*?\]\]>/i,inside:n}}),t=(n["language-"+t]={pattern:/[\s\S]+/,inside:Prism.languages[t]},{});t[e]={pattern:RegExp(/(<__[^>]*>)(?:<!\[CDATA\[(?:[^\]]|\](?!\]>))*\]\]>|(?!<!\[CDATA\[)[\s\S])*?(?=<\/__>)/.source.replace(/__/g,function(){return e}),"i"),lookbehind:!0,greedy:!0,inside:n},Prism.languages.insertBefore("markup","cdata",t)}}),Object.defineProperty(Prism.languages.markup.tag,"addAttribute",{value:function(e,t){Prism.languages.markup.tag.inside["special-attr"].push({pattern:RegExp(/(^|["'\s])/.source+"(?:"+e+")"+/\s*=\s*(?:"[^"]*"|'[^']*'|[^\s'">=]+(?=[\s>]))/.source,"i"),lookbehind:!0,inside:{"attr-name":/^[^\s=]+/,"attr-value":{pattern:/=[\s\S]+/,inside:{value:{pattern:/(^=\s*(["']|(?!["'])))\S[\s\S]*(?=\2$)/,lookbehind:!0,alias:[t,"language-"+t],inside:Prism.languages[t]},punctuation:[{pattern:/^=/,alias:"attr-equals"},/"|'/]}}}})}}),Prism.languages.html=Prism.languages.markup,Prism.languages.mathml=Prism.languages.markup,Prism.languages.svg=Prism.languages.markup,Prism.languages.xml=Prism.languages.extend("markup",{}),Prism.languages.ssml=Prism.languages.xml,Prism.languages.atom=Prism.languages.xml,Prism.languages.rss=Prism.languages.xml,function(e){var t=/(?:"(?:\\(?:\r\n|[\s\S])|[^"\\\r\n])*"|'(?:\\(?:\r\n|[\s\S])|[^'\\\r\n])*')/,t=(e.languages.css={comment:/\/\*[\s\S]*?\*\//,atrule:{pattern:RegExp("@[\\w-](?:"+/[^;{\s"']|\s+(?!\s)/.source+"|"+t.source+")*?"+/(?:;|(?=\s*\{))/.source),inside:{rule:/^@[\w-]+/,"selector-function-argument":{pattern:/(\bselector\s*\(\s*(?![\s)]))(?:[^()\s]|\s+(?![\s)])|\((?:[^()]|\([^()]*\))*\))+(?=\s*\))/,lookbehind:!0,alias:"selector"},keyword:{pattern:/(^|[^\w-])(?:and|not|only|or)(?![\w-])/,lookbehind:!0}}},url:{pattern:RegExp("\\burl\\((?:"+t.source+"|"+/(?:[^\\\r\n()"']|\\[\s\S])*/.source+")\\)","i"),greedy:!0,inside:{function:/^url/i,punctuation:/^\(|\)$/,string:{pattern:RegExp("^"+t.source+"$"),alias:"url"}}},selector:{pattern:RegExp("(^|[{}\\s])[^{}\\s](?:[^{};\"'\\s]|\\s+(?![\\s{])|"+t.source+")*(?=\\s*\\{)"),lookbehind:!0},string:{pattern:t,greedy:!0},property:{pattern:/(^|[^-\w\xA0-\uFFFF])(?!\s)[-_a-z\xA0-\uFFFF](?:(?!\s)[-\w\xA0-\uFFFF])*(?=\s*:)/i,lookbehind:!0},important:/!important\b/i,function:{pattern:/(^|[^-a-z0-9])[-a-z0-9]+(?=\()/i,lookbehind:!0},punctuation:/[(){};:,]/},e.languages.css.atrule.inside.rest=e.languages.css,e.languages.markup);t&&(t.tag.addInlined("style","css"),t.tag.addAttribute("style","css"))}(Prism),Prism.languages.clike={comment:[{pattern:/(^|[^\\])\/\*[\s\S]*?(?:\*\/|$)/,lookbehind:!0,greedy:!0},{pattern:/(^|[^\\:])\/\/.*/,lookbehind:!0,greedy:!0}],string:{pattern:/(["'])(?:\\(?:\r\n|[\s\S])|(?!\1)[^\\\r\n])*\1/,greedy:!0},"class-name":{pattern:/(\b(?:class|extends|implements|instanceof|interface|new|trait)\s+|\bcatch\s+\()[\w.\\]+/i,lookbehind:!0,inside:{punctuation:/[.\\]/}},keyword:/\b(?:break|catch|continue|do|else|finally|for|function|if|in|instanceof|new|null|return|throw|try|while)\b/,boolean:/\b(?:false|true)\b/,function:/\b\w+(?=\()/,number:/\b0x[\da-f]+\b|(?:\b\d+(?:\.\d*)?|\B\.\d+)(?:e[+-]?\d+)?/i,operator:/[<>]=?|[!=]=?=?|--?|\+\+?|&&?|\|\|?|[?*/~^%]/,punctuation:/[{}[\];(),.:]/},Prism.languages.javascript=Prism.languages.extend("clike",{"class-name":[Prism.languages.clike["class-name"],{pattern:/(^|[^$\w\xA0-\uFFFF])(?!\s)[_$A-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*(?=\.(?:constructor|prototype))/,lookbehind:!0}],keyword:[{pattern:/((?:^|\})\s*)catch\b/,lookbehind:!0},{pattern:/(^|[^.]|\.\.\.\s*)\b(?:as|assert(?=\s*\{)|async(?=\s*(?:function\b|\(|[$\w\xA0-\uFFFF]|$))|await|break|case|class|const|continue|debugger|default|delete|do|else|enum|export|extends|finally(?=\s*(?:\{|$))|for|from(?=\s*(?:['"]|$))|function|(?:get|set)(?=\s*(?:[#\[$\w\xA0-\uFFFF]|$))|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|static|super|switch|this|throw|try|typeof|undefined|var|void|while|with|yield)\b/,lookbehind:!0}],function:/#?(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*(?=\s*(?:\.\s*(?:apply|bind|call)\s*)?\()/,number:{pattern:RegExp(/(^|[^\w$])/.source+"(?:"+/NaN|Infinity/.source+"|"+/0[bB][01]+(?:_[01]+)*n?/.source+"|"+/0[oO][0-7]+(?:_[0-7]+)*n?/.source+"|"+/0[xX][\dA-Fa-f]+(?:_[\dA-Fa-f]+)*n?/.source+"|"+/\d+(?:_\d+)*n/.source+"|"+/(?:\d+(?:_\d+)*(?:\.(?:\d+(?:_\d+)*)?)?|\.\d+(?:_\d+)*)(?:[Ee][+-]?\d+(?:_\d+)*)?/.source+")"+/(?![\w$])/.source),lookbehind:!0},operator:/--|\+\+|\*\*=?|=>|&&=?|\|\|=?|[!=]==|<<=?|>>>?=?|[-+*/%&|^!=<>]=?|\.{3}|\?\?=?|\?\.?|[~:]/}),Prism.languages.javascript["class-name"][0].pattern=/(\b(?:class|extends|implements|instanceof|interface|new)\s+)[\w.\\]+/,Prism.languages.insertBefore("javascript","keyword",{regex:{pattern:RegExp(/((?:^|[^$\w\xA0-\uFFFF."'\])\s]|\b(?:return|yield))\s*)/.source+/\//.source+"(?:"+/(?:\[(?:[^\]\\\r\n]|\\.)*\]|\\.|[^/\\\[\r\n])+\/[dgimyus]{0,7}/.source+"|"+/(?:\[(?:[^[\]\\\r\n]|\\.|\[(?:[^[\]\\\r\n]|\\.|\[(?:[^[\]\\\r\n]|\\.)*\])*\])*\]|\\.|[^/\\\[\r\n])+\/[dgimyus]{0,7}v[dgimyus]{0,7}/.source+")"+/(?=(?:\s|\/\*(?:[^*]|\*(?!\/))*\*\/)*(?:$|[\r\n,.;:})\]]|\/\/))/.source),lookbehind:!0,greedy:!0,inside:{"regex-source":{pattern:/^(\/)[\s\S]+(?=\/[a-z]*$)/,lookbehind:!0,alias:"language-regex",inside:Prism.languages.regex},"regex-delimiter":/^\/|\/$/,"regex-flags":/^[a-z]+$/}},"function-variable":{pattern:/#?(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*(?=\s*[=:]\s*(?:async\s*)?(?:\bfunction\b|(?:\((?:[^()]|\([^()]*\))*\)|(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*)\s*=>))/,alias:"function"},parameter:[{pattern:/(function(?:\s+(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*)?\s*\(\s*)(?!\s)(?:[^()\s]|\s+(?![\s)])|\([^()]*\))+(?=\s*\))/,lookbehind:!0,inside:Prism.languages.javascript},{pattern:/(^|[^$\w\xA0-\uFFFF])(?!\s)[_$a-z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*(?=\s*=>)/i,lookbehind:!0,inside:Prism.languages.javascript},{pattern:/(\(\s*)(?!\s)(?:[^()\s]|\s+(?![\s)])|\([^()]*\))+(?=\s*\)\s*=>)/,lookbehind:!0,inside:Prism.languages.javascript},{pattern:/((?:\b|\s|^)(?!(?:as|async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|finally|for|from|function|get|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|set|static|super|switch|this|throw|try|typeof|undefined|var|void|while|with|yield)(?![$\w\xA0-\uFFFF]))(?:(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*\s*)\(\s*|\]\s*\(\s*)(?!\s)(?:[^()\s]|\s+(?![\s)])|\([^()]*\))+(?=\s*\)\s*\{)/,lookbehind:!0,inside:Prism.languages.javascript}],constant:/\b[A-Z](?:[A-Z_]|\dx?)*\b/}),Prism.languages.insertBefore("javascript","string",{hashbang:{pattern:/^#!.*/,greedy:!0,alias:"comment"},"template-string":{pattern:/`(?:\\[\s\S]|\$\{(?:[^{}]|\{(?:[^{}]|\{[^}]*\})*\})+\}|(?!\$\{)[^\\`])*`/,greedy:!0,inside:{"template-punctuation":{pattern:/^`|`$/,alias:"string"},interpolation:{pattern:/((?:^|[^\\])(?:\\{2})*)\$\{(?:[^{}]|\{(?:[^{}]|\{[^}]*\})*\})+\}/,lookbehind:!0,inside:{"interpolation-punctuation":{pattern:/^\$\{|\}$/,alias:"punctuation"},rest:Prism.languages.javascript}},string:/[\s\S]+/}},"string-property":{pattern:/((?:^|[,{])[ \t]*)(["'])(?:\\(?:\r\n|[\s\S])|(?!\2)[^\\\r\n])*\2(?=\s*:)/m,lookbehind:!0,greedy:!0,alias:"property"}}),Prism.languages.insertBefore("javascript","operator",{"literal-property":{pattern:/((?:^|[,{])[ \t]*)(?!\s)[_$a-zA-Z\xA0-\uFFFF](?:(?!\s)[$\w\xA0-\uFFFF])*(?=\s*:)/m,lookbehind:!0,alias:"property"}}),Prism.languages.markup&&(Prism.languages.markup.tag.addInlined("script","javascript"),Prism.languages.markup.tag.addAttribute(/on(?:abort|blur|change|click|composition(?:end|start|update)|dblclick|error|focus(?:in|out)?|key(?:down|up)|load|mouse(?:down|enter|leave|move|out|over|up)|reset|resize|scroll|select|slotchange|submit|unload|wheel)/.source,"javascript")),Prism.languages.js=Prism.languages.javascript,function(){var l,u,g,c,e;void 0!==Prism&&"undefined"!=typeof document&&(Element.prototype.matches||(Element.prototype.matches=Element.prototype.msMatchesSelector||Element.prototype.webkitMatchesSelector),l={js:"javascript",py:"python",rb:"ruby",ps1:"powershell",psm1:"powershell",sh:"bash",bat:"batch",h:"c",tex:"latex"},c="pre[data-src]:not(["+(u="data-src-status")+'="loaded"]):not(['+u+'="'+(g="loading")+'"])',Prism.hooks.add("before-highlightall",function(e){e.selector+=", "+c}),Prism.hooks.add("before-sanity-check",function(e){var r,t,n,a,s,i,o=e.element;o.matches(c)&&(e.code="",o.setAttribute(u,g),(r=o.appendChild(document.createElement("CODE"))).textContent="Loading…",t=o.getAttribute("data-src"),"none"===(e=e.language)&&(n=(/\.(\w+)$/.exec(t)||[,"none"])[1],e=l[n]||n),Prism.util.setLanguage(r,e),Prism.util.setLanguage(o,e),(n=Prism.plugins.autoloader)&&n.loadLanguages(e),n=t,a=function(e){o.setAttribute(u,"loaded");var t,n,a=function(e){var t,n;if(e=/^\s*(\d+)\s*(?:(,)\s*(?:(\d+)\s*)?)?$/.exec(e||""))return t=Number(e[1]),n=e[2],e=e[3],n?e?[t,Number(e)]:[t,void 0]:[t,t]}(o.getAttribute("data-range"));a&&(t=e.split(/\r\n?|\n/g),n=a[0],a=null==a[1]?t.length:a[1],n<0&&(n+=t.length),n=Math.max(0,Math.min(n-1,t.length)),a<0&&(a+=t.length),a=Math.max(0,Math.min(a,t.length)),e=t.slice(n,a).join("\n"),o.hasAttribute("data-start")||o.setAttribute("data-start",String(n+1))),r.textContent=e,Prism.highlightElement(r)},s=function(e){o.setAttribute(u,"failed"),r.textContent=e},(i=new XMLHttpRequest).open("GET",n,!0),i.onreadystatechange=function(){4==i.readyState&&(i.status<400&&i.responseText?a(i.responseText):400<=i.status?s("✖ Error "+i.status+" while fetching file: "+i.statusText):s("✖ Error: File does not exist or is empty"))},i.send(null))}),e=!(Prism.plugins.fileHighlight={highlight:function(e){for(var t,n=(e||document).querySelectorAll(c),a=0;t=n[a++];)Prism.highlightElement(t)}}),Prism.fileHighlight=function(){e||(console.warn("Prism.fileHighlight is deprecated. Use `Prism.plugins.fileHighlight.highlight` instead."),e=!0),Prism.plugins.fileHighlight.highlight.apply(this,arguments)})}();
+                    /* PrismJS Java */
+                    !function (e) { var n = /\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|module|native|new|non-sealed|null|open|opens|package|permits|private|protected|provides|public|record(?!\s*[(){}[\]<>=%~.:,;?+\-*/&|^])|requires|return|sealed|short|static|strictfp|super|switch|synchronized|this|throw|throws|to|transient|transitive|try|uses|var|void|volatile|while|with|yield)\b/, t = "(?:[a-z]\\w*\\s*\\.\\s*)*(?:[A-Z]\\w*\\s*\\.\\s*)*", s = { pattern: RegExp("(^|[^\\w.])" + t + "[A-Z](?:[\\d_A-Z]*[a-z]\\w*)?\\b"), lookbehind: !0, inside: { namespace: { pattern: /^[a-z]\w*(?:\s*\.\s*[a-z]\w*)*(?:\s*\.)?/, inside: { punctuation: /\./ } }, punctuation: /\./ } }; e.languages.java = e.languages.extend("clike", { string: { pattern: /(^|[^\\])"(?:\\.|[^"\\\r\n])*"/, lookbehind: !0, greedy: !0 }, "class-name": [s, { pattern: RegExp("(^|[^\\w.])" + t + "[A-Z]\\w*(?=\\s+\\w+\\s*[;,=()]|\\s*(?:\\[[\\s,]*\\]\\s*)?::\\s*new\\b)"), lookbehind: !0, inside: s.inside }, { pattern: RegExp("(\\b(?:class|enum|extends|implements|instanceof|interface|new|record|throws)\\s+)" + t + "[A-Z]\\w*\\b"), lookbehind: !0, inside: s.inside }], keyword: n, function: [e.languages.clike.function, { pattern: /(::\s*)[a-z_]\w*/, lookbehind: !0 }], number: /\b0b[01][01_]*L?\b|\b0x(?:\.[\da-f_p+-]+|[\da-f_]+(?:\.[\da-f_p+-]+)?)\b|(?:\b\d[\d_]*(?:\.[\d_]*)?|\B\.\d[\d_]*)(?:e[+-]?\d[\d_]*)?[dfl]?/i, operator: { pattern: /(^|[^.])(?:<<=?|>>>?=?|->|--|\+\+|&&|\|\||::|[?:~]|[-+*/%&|^!=<>]=?)/m, lookbehind: !0 }, constant: /\b[A-Z][A-Z_\d]+\b/ }), e.languages.insertBefore("java", "string", { "triple-quoted-string": { pattern: /"""[ \t]*[\r\n](?:(?:"|"")?(?:\\.|[^"\\]))*"""/, greedy: !0, alias: "string" }, char: { pattern: /'(?:\\.|[^'\\\r\n]){1,6}'/, greedy: !0 } }), e.languages.insertBefore("java", "class-name", { annotation: { pattern: /(^|[^.])@\w+(?:\s*\.\s*\w+)*/, lookbehind: !0, alias: "punctuation" }, generics: { pattern: /<(?:[\w\s,.?]|&(?!&)|<(?:[\w\s,.?]|&(?!&)|<(?:[\w\s,.?]|&(?!&)|<(?:[\w\s,.?]|&(?!&))*>)*>)*>)*>/, inside: { "class-name": s, keyword: n, punctuation: /[<>(),.:]/, operator: /[?&|]/ } }, import: [{ pattern: RegExp("(\\bimport\\s+)" + t + "(?:[A-Z]\\w*|\\*)(?=\\s*;)"), lookbehind: !0, inside: { namespace: s.inside.namespace, punctuation: /\./, operator: /\*/, "class-name": /\w+/ } }, { pattern: RegExp("(\\bimport\\s+static\\s+)" + t + "(?:\\w+|\\*)(?=\\s*;)"), lookbehind: !0, alias: "static", inside: { namespace: s.inside.namespace, static: /\b\w+$/, punctuation: /\./, operator: /\*/, "class-name": /\w+/ } }], namespace: { pattern: RegExp("(\\b(?:exports|import(?:\\s+static)?|module|open|opens|package|provides|requires|to|transitive|uses|with)\\s+)(?!<keyword>)[a-z]\\w*(?:\\.[a-z]\\w*)*\\.?".replace(/<keyword>/g, (function () { return n.source }))), lookbehind: !0, inside: { punctuation: /\./ } } }) }(Prism);
+                /* PrismJS Python */
+                Prism.languages.python = { comment: { pattern: /(^|[^\\])#.*/, lookbehind: !0, greedy: !0 }, "string-interpolation": { pattern: /(?:f|fr|rf)(?:("""|''')[\s\S]*?\1|("|')(?:\\.|(?!\2)[^\\\r\n])*\2)/i, greedy: !0, inside: { interpolation: { pattern: /((?:^|[^{])(?:\{\{)*)\{(?!\{)(?:[^{}]|\{(?!\{)(?:[^{}]|\{(?!\{)(?:[^{}])+\})+\})+\}/, lookbehind: !0, inside: { "format-spec": { pattern: /(:)[^:(){}]+(?=\}$)/, lookbehind: !0 }, "conversion-option": { pattern: /![sra](?=[:}]$)/, alias: "punctuation" }, rest: null } }, string: /[\s\S]+/ } }, "triple-quoted-string": { pattern: /(?:[rub]|br|rb)?("""|''')[\s\S]*?\1/i, greedy: !0, alias: "string" }, string: { pattern: /(?:[rub]|br|rb)?("|')(?:\\.|(?!\1)[^\\\r\n])*\1/i, greedy: !0 }, function: { pattern: /((?:^|\s)def[ \t]+)[a-zA-Z_]\w*(?=\s*\()/g, lookbehind: !0 }, "class-name": { pattern: /(\bclass\s+)\w+/i, lookbehind: !0 }, decorator: { pattern: /(^[\t ]*)@\w+(?:\.\w+)*/m, lookbehind: !0, alias: ["annotation", "punctuation"], inside: { punctuation: /\./ } }, keyword: /\b(?:_(?=\s*:)|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|exec|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|not|or|pass|print|raise|return|try|while|with|yield)\b/, builtin: /\b(?:__import__|abs|all|any|apply|ascii|basestring|bin|bool|buffer|bytearray|bytes|callable|chr|classmethod|cmp|coerce|compile|complex|delattr|dict|dir|divmod|enumerate|eval|execfile|file|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|intern|isinstance|issubclass|iter|len|list|locals|long|map|max|memoryview|min|next|object|oct|open|ord|pow|property|range|raw_input|reduce|reload|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|unichr|unicode|vars|xrange|zip)\b/, boolean: /\b(?:False|None|True)\b/, number: /\b0(?:b(?:_?[01])+|o(?:_?[0-7])+|x(?:_?[a-f0-9])+)\b|(?:\b\d+(?:_\d+)*(?:\.(?:\d+(?:_\d+)*)?)?|\B\.\d+(?:_\d+)*)(?:e[+-]?\d+(?:_\d+)*)?j?(?!\w)/i, operator: /[-+%=]=?|!=|:=|\*\*?=?|\/\/?=?|<[<=>]?|>[=>]?|[&|^~]/, punctuation: /[{}[\];(),.:]/ }, Prism.languages.python["string-interpolation"].inside.interpolation.inside.rest = Prism.languages.python, Prism.languages.py = Prism.languages.python;
+                /* PrismJS SQL */
+                Prism.languages.sql = { comment: { pattern: /(^|[^\\])(?:\/\*[\s\S]*?\*\/|(?:--|\/\/|#).*)/, lookbehind: !0 }, variable: [{ pattern: /@(["'`])(?:\\[\s\S]|(?!\1)[^\\])+\1/, greedy: !0 }, /@[\w.$]+/], string: { pattern: /(^|[^@\\])("|')(?:\\[\s\S]|(?!\2)[^\\]|\2\2)*\2/, greedy: !0, lookbehind: !0 }, identifier: { pattern: /(^|[^@\\])`(?:\\[\s\S]|[^`\\]|``)*`/, greedy: !0, lookbehind: !0, inside: { punctuation: /^`|`$/ } }, function: /\b(?:AVG|COUNT|FIRST|FORMAT|LAST|LCASE|LEN|MAX|MID|MIN|MOD|NOW|ROUND|SUM|UCASE)(?=\s*\()/i, keyword: /\b(?:ACTION|ADD|AFTER|ALGORITHM|ALL|ALTER|ANALYZE|ANY|APPLY|AS|ASC|AUTHORIZATION|AUTO_INCREMENT|BACKUP|BDB|BEGIN|BERKELEYDB|BIGINT|BINARY|BIT|BLOB|BOOL|BOOLEAN|BREAK|BROWSE|BTREE|BULK|BY|CALL|CASCADED?|CASE|CHAIN|CHAR(?:ACTER|SET)?|CHECK(?:POINT)?|CLOSE|CLUSTERED|COALESCE|COLLATE|COLUMNS?|COMMENT|COMMIT(?:TED)?|COMPUTE|CONNECT|CONSISTENT|CONSTRAINT|CONTAINS(?:TABLE)?|CONTINUE|CONVERT|CREATE|CROSS|CURRENT(?:_DATE|_TIME|_TIMESTAMP|_USER)?|CURSOR|CYCLE|DATA(?:BASES?)?|DATE(?:TIME)?|DAY|DBCC|DEALLOCATE|DEC|DECIMAL|DECLARE|DEFAULT|DEFINER|DELAYED|DELETE|DELIMITERS?|DENY|DESC|DESCRIBE|DETERMINISTIC|DISABLE|DISCARD|DISK|DISTINCT|DISTINCTROW|DISTRIBUTED|DO|DOUBLE|DROP|DUMMY|DUMP(?:FILE)?|DUPLICATE|ELSE(?:IF)?|ENABLE|ENCLOSED|END|ENGINE|ENUM|ERRLVL|ERRORS|ESCAPED?|EXCEPT|EXEC(?:UTE)?|EXISTS|EXIT|EXPLAIN|EXTENDED|FETCH|FIELDS|FILE|FILLFACTOR|FIRST|FIXED|FLOAT|FOLLOWING|FOR(?: EACH ROW)?|FORCE|FOREIGN|FREETEXT(?:TABLE)?|FROM|FULL|FUNCTION|GEOMETRY(?:COLLECTION)?|GLOBAL|GOTO|GRANT|GROUP|HANDLER|HASH|HAVING|HOLDLOCK|HOUR|IDENTITY(?:COL|_INSERT)?|IF|IGNORE|IMPORT|INDEX|INFILE|INNER|INNODB|INOUT|INSERT|INT|INTEGER|INTERSECT|INTERVAL|INTO|INVOKER|ISOLATION|ITERATE|JOIN|KEYS?|KILL|LANGUAGE|LAST|LEAVE|LEFT|LEVEL|LIMIT|LINENO|LINES|LINESTRING|LOAD|LOCAL|LOCK|LONG(?:BLOB|TEXT)|LOOP|MATCH(?:ED)?|MEDIUM(?:BLOB|INT|TEXT)|MERGE|MIDDLEINT|MINUTE|MODE|MODIFIES|MODIFY|MONTH|MULTI(?:LINESTRING|POINT|POLYGON)|NATIONAL|NATURAL|NCHAR|NEXT|NO|NONCLUSTERED|NULLIF|NUMERIC|OFF?|OFFSETS?|ON|OPEN(?:DATASOURCE|QUERY|ROWSET)?|OPTIMIZE|OPTION(?:ALLY)?|ORDER|OUT(?:ER|FILE)?|OVER|PARTIAL|PARTITION|PERCENT|PIVOT|PLAN|POINT|POLYGON|PRECEDING|PRECISION|PREPARE|PREV|PRIMARY|PRINT|PRIVILEGES|PROC(?:EDURE)?|PUBLIC|PURGE|QUICK|RAISERROR|READS?|REAL|RECONFIGURE|REFERENCES|RELEASE|RENAME|REPEAT(?:ABLE)?|REPLACE|REPLICATION|REQUIRE|RESIGNAL|RESTORE|RESTRICT|RETURN(?:ING|S)?|REVOKE|RIGHT|ROLLBACK|ROUTINE|ROW(?:COUNT|GUIDCOL|S)?|RTREE|RULE|SAVE(?:POINT)?|SCHEMA|SECOND|SELECT|SERIAL(?:IZABLE)?|SESSION(?:_USER)?|SET(?:USER)?|SHARE|SHOW|SHUTDOWN|SIMPLE|SMALLINT|SNAPSHOT|SOME|SONAME|SQL|START(?:ING)?|STATISTICS|STATUS|STRIPED|SYSTEM_USER|TABLES?|TABLESPACE|TEMP(?:ORARY|TABLE)?|TERMINATED|TEXT(?:SIZE)?|THEN|TIME(?:STAMP)?|TINY(?:BLOB|INT|TEXT)|TOP?|TRAN(?:SACTIONS?)?|TRIGGER|TRUNCATE|TSEQUAL|TYPES?|UNBOUNDED|UNCOMMITTED|UNDEFINED|UNION|UNIQUE|UNLOCK|UNPIVOT|UNSIGNED|UPDATE(?:TEXT)?|USAGE|USE|USER|USING|VALUES?|VAR(?:BINARY|CHAR|CHARACTER|YING)|VIEW|WAITFOR|WARNINGS|WHEN|WHERE|WHILE|WITH(?: ROLLUP|IN)?|WORK|WRITE(?:TEXT)?|YEAR)\b/i, boolean: /\b(?:FALSE|NULL|TRUE)\b/i, number: /\b0x[\da-f]+\b|\b\d+(?:\.\d*)?|\B\.\d+\b/i, operator: /[-+*\/=%^~]|&&?|\|\|?|!=?|<(?:=>?|<|>)?|>[>=]?|\b(?:AND|BETWEEN|DIV|ILIKE|IN|IS|LIKE|NOT|OR|REGEXP|RLIKE|SOUNDS LIKE|XOR)\b/i, punctuation: /[;[\]()`,.]/ };
+                /* PrismJS JSON */
+                Prism.languages.json = { property: { pattern: /(^|[^\\])"(?:\\.|[^\\"\r\n])*"(?=\s*:)/, lookbehind: !0, greedy: !0 }, string: { pattern: /(^|[^\\])"(?:\\.|[^\\"\r\n])*"(?!\s*:)/, lookbehind: !0, greedy: !0 }, comment: { pattern: /\/\/.*|\/\*[\s\S]*?(?:\*\/|$)/, greedy: !0 }, number: /-?\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/i, punctuation: /[{}[\],]/, operator: /:/, boolean: /\b(?:false|true)\b/, null: { pattern: /\bnull\b/, alias: "keyword" } }, Prism.languages.webmanifest = Prism.languages.json;
+
+    (function () {
+                    'use strict';
+
+                    window.highlightCode = function () {
+                        document.querySelectorAll('pre code').forEach((block) => {
+                            const langClass = block.className.match(/language-([\w-]+)/);
+                            const lang = langClass ? langClass[1] : 'plaintext';
+
+                            const grammar = Prism.languages[lang];
+                            if (!grammar) {
+                                // console.warn('Prism grammar not found for:', lang);
+                                return;
+                            }
+
+                            // Check for line structure
+                            const lines = block.querySelectorAll('.line');
+
+                            if (lines.length > 0) {
+                                lines.forEach(line => {
+                                    // Highlight text content of line, insert back as innerHTML
+                                    // We use Prism.highlight(text, grammar, language)
+                                    const code = line.textContent;
+                                    line.innerHTML = Prism.highlight(code, grammar, lang);
+                                });
+                            } else {
+                                // Fallback
+                                Prism.highlightElement(block);
+                            }
+                        });
+                    };
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', window.highlightCode);
+                    } else {
+                        window.highlightCode();
+                    }
+                })();
+    </script>
+</body>
+
+</html>

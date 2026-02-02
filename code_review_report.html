@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dance Game 程式碼審查報告</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --border-color: #30363d;
+            --accent-primary: #58a6ff;
+            --accent-success: #3fb950;
+            --accent-warning: #d29922;
+            --accent-danger: #f85149;
+            --accent-info: #58a6ff;
+            --severity-critical: #f85149;
+            --severity-high: #ff7b72;
+            --severity-medium: #d29922;
+            --severity-low: #3fb950;
+            --severity-info: #58a6ff;
+            --code-bg: #0d1117;
+            --code-border: #30363d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        .meta-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .section {
+            margin-bottom: 2.5rem;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            padding: 1.25rem 1.5rem;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .section-content {
+            padding: 1.5rem;
+        }
+        
+        /* Score Card */
+        .score-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+        
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: conic-gradient(var(--accent-success) 0deg, var(--accent-success) calc(3.6deg * 78), var(--bg-tertiary) calc(3.6deg * 78));
+            position: relative;
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background-color: var(--bg-secondary);
+            border-radius: 50%;
+        }
+        
+        .score-value {
+            position: relative;
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-success);
+        }
+        
+        .score-label {
+            position: relative;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* Severity Distribution */
+        .severity-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .severity-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .severity-label {
+            width: 80px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .severity-track {
+            flex: 1;
+            height: 24px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .severity-fill {
+            height: 100%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 30px;
+        }
+        
+        .severity-critical { background-color: var(--severity-critical); }
+        .severity-high { background-color: var(--severity-high); }
+        .severity-medium { background-color: var(--severity-medium); }
+        .severity-low { background-color: var(--severity-low); }
+        .severity-info { background-color: var(--severity-info); }
+        
+        /* Issue Cards */
+        .issue-card {
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+            overflow: hidden;
+        }
+        
+        .issue-card.critical { border-left-color: var(--severity-critical); }
+        .issue-card.high { border-left-color: var(--severity-high); }
+        .issue-card.medium { border-left-color: var(--severity-medium); }
+        .issue-card.low { border-left-color: var(--severity-low); }
+        .issue-card.info { border-left-color: var(--severity-info); }
+        
+        .issue-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .issue-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        
+        .badge-critical { background-color: var(--severity-critical); color: white; }
+        .badge-high { background-color: var(--severity-high); color: #1a1a1a; }
+        .badge-medium { background-color: var(--severity-medium); color: #1a1a1a; }
+        .badge-low { background-color: var(--severity-low); color: #1a1a1a; }
+        .badge-info { background-color: var(--severity-info); color: white; }
+        
+        .issue-title {
+            flex: 1;
+        }
+        
+        .issue-title h3 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .issue-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .issue-body {
+            padding: 1.25rem;
+        }
+        
+        .issue-description {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 6px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .code-header {
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--code-border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .code-content {
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Source Code Pro', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        
+        .code-content pre {
+            margin: 0;
+        }
+        
+        .code-line {
+            display: flex;
+        }
+        
+        .line-number {
+            color: var(--text-muted);
+            text-align: right;
+            padding-right: 1rem;
+            user-select: none;
+            min-width: 3rem;
+        }
+        
+        .line-content {
+            flex: 1;
+        }
+        
+        .line-highlight {
+            background-color: rgba(248, 81, 73, 0.15);
+        }
+        
+        .suggestion-box {
+            background-color: rgba(63, 185, 80, 0.1);
+            border: 1px solid rgba(63, 185, 80, 0.3);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--accent-success);
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Summary List */
+        .summary-list {
+            list-style: none;
+        }
+        
+        .summary-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .summary-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .check-icon {
+            color: var(--accent-success);
+            font-size: 1.2rem;
+        }
+        
+        .warning-icon {
+            color: var(--accent-warning);
+            font-size: 1.2rem;
+        }
+        
+        /* Keyword highlighting */
+        .hljs-keyword { color: #ff7b72; }
+        .hljs-string { color: #a5d6ff; }
+        .hljs-comment { color: #8b949e; font-style: italic; }
+        .hljs-function { color: #d2a8ff; }
+        .hljs-class { color: #ffa657; }
+        .hljs-number { color: #79c0ff; }
+        .hljs-decorator { color: #ffa657; }
+        .hljs-variable { color: #c9d1d9; }
+        .hljs-type { color: #7ee787; }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.75rem;
+            }
+            
+            .score-card {
+                gap: 1.5rem;
+            }
+            
+            .meta-info {
+                gap: 1rem;
+            }
+            
+            .issue-header {
+                flex-direction: column;
+            }
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .section {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dance Game 程式碼審查報告</h1>
+            <p class="subtitle">Python Pygame 跳舞機遊戲專案完整審查</p>
+            <div class="meta-info">
+                <div class="meta-item">
+                    <span>&#128197;</span>
+                    <span>審查日期: 2026-01-28</span>
+                </div>
+                <div class="meta-item">
+                    <span>&#128194;</span>
+                    <span>專案: dance-game</span>
+                </div>
+                <div class="meta-item">
+                    <span>&#128221;</span>
+                    <span>審查類型: 完整程式碼審查</span>
+                </div>
+                <div class="meta-item">
+                    <span>&#127919;</span>
+                    <span>審查範圍: src/, tests/</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Executive Summary -->
+        <div class="section">
+            <div class="section-header">
+                <span>&#128202;</span>
+                <h2>執行摘要</h2>
+            </div>
+            <div class="section-content">
+                <div class="score-card">
+                    <div class="score-circle">
+                        <div class="score-value">78</div>
+                        <div class="score-label">整體評分</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">11</div>
+                            <div class="stat-label">原始檔案</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">~1,600</div>
+                            <div class="stat-label">程式碼行數</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">發現問題</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">測試檔案</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem;">嚴重程度分布</h3>
+                    <div class="severity-bars">
+                        <div class="severity-bar">
+                            <span class="severity-label" style="color: var(--severity-critical);">Critical</span>
+                            <div class="severity-track">
+                                <div class="severity-fill severity-critical" style="width: 0%;">0</div>
+                            </div>
+                        </div>
+                        <div class="severity-bar">
+                            <span class="severity-label" style="color: var(--severity-high);">High</span>
+                            <div class="severity-track">
+                                <div class="severity-fill severity-high" style="width: 25%;">3</div>
+                            </div>
+                        </div>
+                        <div class="severity-bar">
+                            <span class="severity-label" style="color: var(--severity-medium);">Medium</span>
+                            <div class="severity-track">
+                                <div class="severity-fill severity-medium" style="width: 42%;">5</div>
+                            </div>
+                        </div>
+                        <div class="severity-bar">
+                            <span class="severity-label" style="color: var(--severity-low);">Low</span>
+                            <div class="severity-track">
+                                <div class="severity-fill severity-low" style="width: 17%;">2</div>
+                            </div>
+                        </div>
+                        <div class="severity-bar">
+                            <span class="severity-label" style="color: var(--severity-info);">Info</span>
+                            <div class="severity-track">
+                                <div class="severity-fill severity-info" style="width: 17%;">2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; font-size: 1rem;">關鍵發現</h3>
+                    <ul class="summary-list">
+                        <li>
+                            <span class="check-icon">&#10004;</span>
+                            <span>整體程式碼結構清晰，模組化設計良好，遵循關注點分離原則</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">&#10004;</span>
+                            <span>使用繁體中文註解，符合專案規範，文件說明完整</span>
+                        </li>
+                        <li>
+                            <span class="warning-icon">&#9888;</span>
+                            <span>GameEngine 類別過於龐大 (~574 行)，違反單一職責原則，建議拆分</span>
+                        </li>
+                        <li>
+                            <span class="warning-icon">&#9888;</span>
+                            <span>使用字典作為 GameState 而非 Enum，降低了型別安全性</span>
+                        </li>
+                        <li>
+                            <span class="warning-icon">&#9888;</span>
+                            <span>測試覆蓋率有限，僅覆蓋 Score 和 Timing 模組，缺少整合測試</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- High Severity Issues -->
+        <div class="section">
+            <div class="section-header">
+                <span style="color: var(--severity-high);">&#9888;</span>
+                <h2>High 嚴重程度問題</h2>
+            </div>
+            <div class="section-content">
+                
+                <!-- Issue 1 -->
+                <div class="issue-card high">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-high">HIGH</span>
+                        <div class="issue-title">
+                            <h3>GameEngine 類別過於龐大 - 違反單一職責原則 (SRP)</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; engine.py</span>
+                                <span>&#128203; 架構設計</span>
+                                <span>&#128196; 行 43-574</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            GameEngine 類別承擔了過多職責，包含遊戲初始化、事件處理、狀態管理、繪製邏輯等，
+                            共計 574 行程式碼。這違反了 SOLID 原則中的單一職責原則，使得程式碼難以維護和測試。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>engine.py - 類別職責分析</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">43</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameEngine</span>:</span></span>
+<span class="code-line"><span class="line-number">44</span><span class="line-content">    <span class="hljs-string">"""遊戲引擎主類別"""</span></span></span>
+<span class="code-line"><span class="line-number">45</span><span class="line-content">    </span></span>
+<span class="code-line line-highlight"><span class="line-number">46</span><span class="line-content">    <span class="hljs-comment"># 職責1: 初始化 (行 46-95)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">97</span><span class="line-content">    <span class="hljs-comment"># 職責2: 主循環 (行 97-107)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">109</span><span class="line-content">    <span class="hljs-comment"># 職責3: 事件處理 (行 109-175)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">177</span><span class="line-content">    <span class="hljs-comment"># 職責4: 箭頭判定 (行 177-235)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">237</span><span class="line-content">    <span class="hljs-comment"># 職責5: 遊戲更新 (行 237-307)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">309</span><span class="line-content">    <span class="hljs-comment"># 職責6: 繪製邏輯 (行 309-554)</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">556</span><span class="line-content">    <span class="hljs-comment"># 職責7: 遊戲控制 (行 556-573)</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <p>建議將 GameEngine 拆分為多個專責類別：</p>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>建議架構</span>
+                                    <span>Python</span>
+                                </div>
+                                <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-comment"># 拆分為以下類別：</span></span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">InputHandler</span>:      <span class="hljs-comment"># 處理所有輸入事件</span></span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameStateManager</span>:  <span class="hljs-comment"># 管理遊戲狀態轉換</span></span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">ArrowManager</span>:      <span class="hljs-comment"># 管理箭頭生成和判定</span></span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">Renderer</span>:          <span class="hljs-comment"># 所有繪製邏輯</span></span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameEngine</span>:        <span class="hljs-comment"># 協調上述組件</span></span></span></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">SOLID</span>
+                            <span class="tag">SRP</span>
+                            <span class="tag">重構</span>
+                            <span class="tag">Extract Class</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 2 -->
+                <div class="issue-card high">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-high">HIGH</span>
+                        <div class="issue-title">
+                            <h3>使用字典模擬 Enum - 缺乏型別安全性</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; constants.py</span>
+                                <span>&#128203; 型別安全</span>
+                                <span>&#128196; 行 80-86</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            GameState 使用普通字典定義，而非 Python 的 Enum 類別。這導致無法在開發時期
+                            進行型別檢查，容易因拼寫錯誤造成難以追蹤的 bug。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>constants.py - 目前實作</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line line-highlight"><span class="line-number">80</span><span class="line-content"><span class="hljs-comment"># 遊戲狀態 - 使用字典而非 Enum</span></span></span>
+<span class="code-line line-highlight"><span class="line-number">81</span><span class="line-content">GameState = {</span></span>
+<span class="code-line line-highlight"><span class="line-number">82</span><span class="line-content">    <span class="hljs-string">"MENU"</span>: <span class="hljs-string">"menu"</span>,</span></span>
+<span class="code-line line-highlight"><span class="line-number">83</span><span class="line-content">    <span class="hljs-string">"PLAYING"</span>: <span class="hljs-string">"playing"</span>,</span></span>
+<span class="code-line line-highlight"><span class="line-number">84</span><span class="line-content">    <span class="hljs-string">"PAUSED"</span>: <span class="hljs-string">"paused"</span>,</span></span>
+<span class="code-line line-highlight"><span class="line-number">85</span><span class="line-content">    <span class="hljs-string">"GAME_OVER"</span>: <span class="hljs-string">"game_over"</span>,</span></span>
+<span class="code-line line-highlight"><span class="line-number">86</span><span class="line-content">}</span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>使用 Enum 重構</span>
+                                    <span>Python</span>
+                                </div>
+                                <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-keyword">from</span> enum <span class="hljs-keyword">import</span> Enum, auto</span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameState</span>(Enum):</span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content">    <span class="hljs-string">"""遊戲狀態列舉"""</span></span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content">    MENU = auto()</span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content">    PLAYING = auto()</span></span>
+<span class="code-line"><span class="line-number">7</span><span class="line-content">    PAUSED = auto()</span></span>
+<span class="code-line"><span class="line-number">8</span><span class="line-content">    GAME_OVER = auto()</span></span>
+<span class="code-line"><span class="line-number">9</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">10</span><span class="line-content"><span class="hljs-comment"># 使用方式：</span></span></span>
+<span class="code-line"><span class="line-number">11</span><span class="line-content">self.game_state = GameState.MENU  <span class="hljs-comment"># 型別安全</span></span></span></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Type Safety</span>
+                            <span class="tag">Enum</span>
+                            <span class="tag">Python Best Practice</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 3 -->
+                <div class="issue-card high">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-high">HIGH</span>
+                        <div class="issue-title">
+                            <h3>潛在記憶體洩漏 - combo_effects 列表無上限</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; score.py</span>
+                                <span>&#128203; 效能/資源管理</span>
+                                <span>&#128196; 行 84-87</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            雖然 update_combo_effects 方法會移除過期的特效，但在極端情況下（如快速連續擊中），
+                            combo_effects 列表可能在清理前累積大量項目。與 score_history 不同，此列表沒有硬性上限。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>score.py - 特效觸發</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">84</span><span class="line-content"><span class="hljs-keyword">def</span> <span class="hljs-function">_trigger_combo_effect</span>(<span class="hljs-variable">self</span>, current_time: <span class="hljs-type">float</span>) -> <span class="hljs-type">None</span>:</span></span>
+<span class="code-line"><span class="line-number">85</span><span class="line-content">    <span class="hljs-string">"""觸發連擊特效"""</span></span></span>
+<span class="code-line"><span class="line-number">86</span><span class="line-content">    self.last_combo_time = current_time</span></span>
+<span class="code-line line-highlight"><span class="line-number">87</span><span class="line-content">    self.combo_effects.append({<span class="hljs-string">"time"</span>: current_time, <span class="hljs-string">"combo"</span>: self.combo})</span></span>
+<span class="code-line"><span class="line-number">88</span><span class="line-content">    <span class="hljs-comment"># 沒有上限檢查！</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>添加上限控制</span>
+                                    <span>Python</span>
+                                </div>
+                                <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content">MAX_COMBO_EFFECTS = 20  <span class="hljs-comment"># 類別常數</span></span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content"><span class="hljs-keyword">def</span> <span class="hljs-function">_trigger_combo_effect</span>(<span class="hljs-variable">self</span>, current_time: <span class="hljs-type">float</span>) -> <span class="hljs-type">None</span>:</span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content">    <span class="hljs-string">"""觸發連擊特效"""</span></span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content">    self.last_combo_time = current_time</span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content">    self.combo_effects.append({<span class="hljs-string">"time"</span>: current_time, <span class="hljs-string">"combo"</span>: self.combo})</span></span>
+<span class="code-line"><span class="line-number">7</span><span class="line-content">    <span class="hljs-comment"># 限制列表大小</span></span></span>
+<span class="code-line"><span class="line-number">8</span><span class="line-content">    <span class="hljs-keyword">if</span> <span class="hljs-variable">len</span>(self.combo_effects) > self.MAX_COMBO_EFFECTS:</span></span>
+<span class="code-line"><span class="line-number">9</span><span class="line-content">        self.combo_effects = self.combo_effects[-self.MAX_COMBO_EFFECTS:]</span></span></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Memory Management</span>
+                            <span class="tag">Performance</span>
+                            <span class="tag">Defensive Programming</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Medium Severity Issues -->
+        <div class="section">
+            <div class="section-header">
+                <span style="color: var(--severity-medium);">&#9888;</span>
+                <h2>Medium 嚴重程度問題</h2>
+            </div>
+            <div class="section-content">
+                
+                <!-- Issue 4 -->
+                <div class="issue-card medium">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-medium">MEDIUM</span>
+                        <div class="issue-title">
+                            <h3>未使用的 import - os 模組</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; main.py</span>
+                                <span>&#128203; 程式碼整潔</span>
+                                <span>&#128196; 行 6</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            main.py 導入了 os 模組但從未使用，這會增加不必要的記憶體佔用並降低程式碼可讀性。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>main.py</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">5</span><span class="line-content"><span class="hljs-keyword">import</span> sys</span></span>
+<span class="code-line line-highlight"><span class="line-number">6</span><span class="line-content"><span class="hljs-keyword">import</span> os  <span class="hljs-comment"># 未使用</span></span></span>
+<span class="code-line"><span class="line-number">7</span><span class="line-content"><span class="hljs-keyword">import</span> pygame</span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <p>移除未使用的 import 語句，或使用 ruff/flake8 等工具自動檢測。</p>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Clean Code</span>
+                            <span class="tag">Unused Import</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 5 -->
+                <div class="issue-card medium">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-medium">MEDIUM</span>
+                        <div class="issue-title">
+                            <h3>測試覆蓋率不足 - 缺少關鍵模組測試</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; tests/</span>
+                                <span>&#128203; 測試品質</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            目前僅有 test_score.py、test_timing.py 和 test_arrow.py 三個測試檔案，
+                            缺少對 GameEngine、Difficulty、AudioManager、AssetLoader、Config 等核心模組的測試。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>測試覆蓋分析</span>
+                                <span>Text</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content">已測試模組:</span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content">  &#10004; score.py       - 8 個測試案例</span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content">  &#10004; timing.py      - 7 個測試案例</span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content">  &#10004; arrow.py       - (測試檔案存在)</span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content">缺少測試:</span></span>
+<span class="code-line line-highlight"><span class="line-number">7</span><span class="line-content">  &#10008; engine.py      - 核心遊戲邏輯</span></span>
+<span class="code-line line-highlight"><span class="line-number">8</span><span class="line-content">  &#10008; difficulty.py  - 難度系統</span></span>
+<span class="code-line line-highlight"><span class="line-number">9</span><span class="line-content">  &#10008; audio_manager.py - 音效管理</span></span>
+<span class="code-line line-highlight"><span class="line-number">10</span><span class="line-content">  &#10008; asset_loader.py  - 資源載入</span></span>
+<span class="code-line line-highlight"><span class="line-number">11</span><span class="line-content">  &#10008; config.py        - 配置管理</span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <p>建議優先為以下模組添加單元測試：</p>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>difficulty.py - 難度計算邏輯</li>
+                                <li>config.py - 配置讀寫邏輯</li>
+                                <li>整合測試 - 測試模組間的互動</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Testing</span>
+                            <span class="tag">Coverage</span>
+                            <span class="tag">Quality Assurance</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 6 -->
+                <div class="issue-card medium">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-medium">MEDIUM</span>
+                        <div class="issue-title">
+                            <h3>硬編碼的魔術數字</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; engine.py</span>
+                                <span>&#128203; 可維護性</span>
+                                <span>&#128196; 行 383-384</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            繪製程式碼中存在硬編碼的座標值，這些值應該提取為常數或根據視窗大小動態計算。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>engine.py</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">383</span><span class="line-content">pygame.draw.line(</span></span>
+<span class="code-line line-highlight"><span class="line-number">384</span><span class="line-content">    self.screen, GRAY, (<span class="hljs-number">250</span>, JUDGMENT_LINE_Y), (<span class="hljs-number">550</span>, JUDGMENT_LINE_Y), <span class="hljs-number">1</span></span></span>
+<span class="code-line"><span class="line-number">385</span><span class="line-content">)</span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>使用常數</span>
+                                    <span>Python</span>
+                                </div>
+                                <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-comment"># constants.py 中定義</span></span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content">JUDGMENT_LINE_START_X = 250</span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content">JUDGMENT_LINE_END_X = 550</span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content">JUDGMENT_LINE_WIDTH = 1</span></span></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Magic Numbers</span>
+                            <span class="tag">Maintainability</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 7 -->
+                <div class="issue-card medium">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-medium">MEDIUM</span>
+                        <div class="issue-title">
+                            <h3>重複的資源清理邏輯</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; engine.py, main.py</span>
+                                <span>&#128203; DRY 原則</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            pygame.quit() 在 main.py 的 finally 區塊和 engine.py 的 _cleanup 方法中都被呼叫，
+                            可能導致重複清理。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>main.py</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">29</span><span class="line-content">    <span class="hljs-keyword">finally</span>:</span></span>
+<span class="code-line line-highlight"><span class="line-number">30</span><span class="line-content">        pygame.quit()  <span class="hljs-comment"># 第一次清理</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>engine.py</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">569</span><span class="line-content"><span class="hljs-keyword">def</span> <span class="hljs-function">_cleanup</span>(<span class="hljs-variable">self</span>) -> <span class="hljs-type">None</span>:</span></span>
+<span class="code-line"><span class="line-number">570</span><span class="line-content">    <span class="hljs-string">"""清理資源"""</span></span></span>
+<span class="code-line"><span class="line-number">571</span><span class="line-content">    self.audio_manager.cleanup()</span></span>
+<span class="code-line"><span class="line-number">572</span><span class="line-content">    self.asset_loader.cleanup()</span></span>
+<span class="code-line line-highlight"><span class="line-number">573</span><span class="line-content">    pygame.quit()  <span class="hljs-comment"># 第二次清理</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <p>移除 main.py 中的 pygame.quit()，僅保留 engine._cleanup() 中的清理邏輯。</p>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">DRY</span>
+                            <span class="tag">Resource Management</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 8 -->
+                <div class="issue-card medium">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-medium">MEDIUM</span>
+                        <div class="issue-title">
+                            <h3>缺少型別提示 - 部分方法返回值</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; asset_loader.py</span>
+                                <span>&#128203; 型別安全</span>
+                                <span>&#128196; 行 89</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            load_sound 方法的返回型別標註為 pygame.mixer.Sound，但實際可能返回 None。
+                            這會導致型別檢查工具產生誤判。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>asset_loader.py</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line line-highlight"><span class="line-number">89</span><span class="line-content"><span class="hljs-keyword">def</span> <span class="hljs-function">load_sound</span>(<span class="hljs-variable">self</span>, filename: <span class="hljs-type">str</span>, subfolder: <span class="hljs-type">str</span> = <span class="hljs-string">""</span>) -> pygame.mixer.Sound:</span></span>
+<span class="code-line"><span class="line-number">90</span><span class="line-content">    <span class="hljs-string">"""</span></span></span>
+<span class="code-line"><span class="line-number">91</span><span class="line-content">    <span class="hljs-string">載入音效資源</span></span></span>
+<span class="code-line"><span class="line-number">92</span><span class="line-content">    ...</span></span>
+<span class="code-line"><span class="line-number">93</span><span class="line-content">    <span class="hljs-string">Returns:</span></span></span>
+<span class="code-line"><span class="line-number">94</span><span class="line-content">        <span class="hljs-string">pygame.mixer.Sound or None: 載入的音效</span>  <span class="hljs-comment"># 文件說可能是 None</span></span></span>
+<span class="code-line"><span class="line-number">95</span><span class="line-content">    <span class="hljs-string">"""</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>正確的型別標註</span>
+                                    <span>Python</span>
+                                </div>
+                                <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-keyword">def</span> <span class="hljs-function">load_sound</span>(</span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content">    <span class="hljs-variable">self</span>, filename: <span class="hljs-type">str</span>, subfolder: <span class="hljs-type">str</span> = <span class="hljs-string">""</span></span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content">) -> <span class="hljs-type">Optional</span>[pygame.mixer.Sound]:</span></span></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Type Hints</span>
+                            <span class="tag">Optional</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Low Severity Issues -->
+        <div class="section">
+            <div class="section-header">
+                <span style="color: var(--severity-low);">&#128309;</span>
+                <h2>Low 嚴重程度問題</h2>
+            </div>
+            <div class="section-content">
+                
+                <!-- Issue 9 -->
+                <div class="issue-card low">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-low">LOW</span>
+                        <div class="issue-title">
+                            <h3>可提取為獨立方法 - 繪製邏輯</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; engine.py</span>
+                                <span>&#128203; 可讀性</span>
+                                <span>&#128196; 行 380-397</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            _draw_game 方法中的判定線和背景箭頭繪製邏輯可以提取為獨立的私有方法，提高可讀性。
+                        </p>
+                        
+                        <div class="suggestion-box">
+                            <div class="suggestion-header">
+                                <span>&#128161;</span>
+                                <span>建議修改</span>
+                            </div>
+                            <p>建議提取為 _draw_judgment_line() 和 _draw_ghost_arrows() 方法。</p>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Extract Method</span>
+                            <span class="tag">Readability</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issue 10 -->
+                <div class="issue-card low">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-low">LOW</span>
+                        <div class="issue-title">
+                            <h3>常數命名不一致</h3>
+                            <div class="issue-meta">
+                                <span>&#128193; constants.py</span>
+                                <span>&#128203; 命名規範</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            部分常數使用 SCREAMING_SNAKE_CASE（如 WINDOW_WIDTH），
+                            但 GameState 和 DifficultyLevel 使用 PascalCase。
+                            建議統一使用 Enum 類別。
+                        </p>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Naming Convention</span>
+                            <span class="tag">Consistency</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Info/Recommendations -->
+        <div class="section">
+            <div class="section-header">
+                <span style="color: var(--severity-info);">&#128161;</span>
+                <h2>改進建議</h2>
+            </div>
+            <div class="section-content">
+                
+                <!-- Recommendation 1 -->
+                <div class="issue-card info">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-info">INFO</span>
+                        <div class="issue-title">
+                            <h3>建議使用 State Pattern 重構遊戲狀態</h3>
+                            <div class="issue-meta">
+                                <span>&#128203; 設計模式</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            目前遊戲狀態使用 if-elif 條件判斷處理，隨著狀態增加會變得難以維護。
+                            建議採用 State Pattern 設計模式，將每個狀態封裝為獨立的類別。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>State Pattern 範例</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-keyword">from</span> abc <span class="hljs-keyword">import</span> ABC, abstractmethod</span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameState</span>(ABC):</span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content">    <span class="hljs-decorator">@abstractmethod</span></span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content">    <span class="hljs-keyword">def</span> <span class="hljs-function">handle_input</span>(<span class="hljs-variable">self</span>, engine, key): ...</span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content">    <span class="hljs-decorator">@abstractmethod</span></span></span>
+<span class="code-line"><span class="line-number">7</span><span class="line-content">    <span class="hljs-keyword">def</span> <span class="hljs-function">update</span>(<span class="hljs-variable">self</span>, engine, dt): ...</span></span>
+<span class="code-line"><span class="line-number">8</span><span class="line-content">    <span class="hljs-decorator">@abstractmethod</span></span></span>
+<span class="code-line"><span class="line-number">9</span><span class="line-content">    <span class="hljs-keyword">def</span> <span class="hljs-function">draw</span>(<span class="hljs-variable">self</span>, engine): ...</span></span>
+<span class="code-line"><span class="line-number">10</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">11</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">MenuState</span>(GameState): ...</span></span>
+<span class="code-line"><span class="line-number">12</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">PlayingState</span>(GameState): ...</span></span>
+<span class="code-line"><span class="line-number">13</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">PausedState</span>(GameState): ...</span></span>
+<span class="code-line"><span class="line-number">14</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">GameOverState</span>(GameState): ...</span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">State Pattern</span>
+                            <span class="tag">GOF</span>
+                            <span class="tag">Behavioral Pattern</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendation 2 -->
+                <div class="issue-card info">
+                    <div class="issue-header">
+                        <span class="issue-badge badge-info">INFO</span>
+                        <div class="issue-title">
+                            <h3>建議使用 Dataclass 簡化資料結構</h3>
+                            <div class="issue-meta">
+                                <span>&#128203; Python 最佳實踐</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-body">
+                        <p class="issue-description">
+                            目前使用字典儲存回饋訊息、連擊特效等資料。建議使用 Python 的 dataclass 
+                            來定義這些資料結構，提供更好的型別提示和可讀性。
+                        </p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>Dataclass 範例</span>
+                                <span>Python</span>
+                            </div>
+                            <div class="code-content">
+<pre><span class="code-line"><span class="line-number">1</span><span class="line-content"><span class="hljs-keyword">from</span> dataclasses <span class="hljs-keyword">import</span> dataclass</span></span>
+<span class="code-line"><span class="line-number">2</span><span class="line-content"><span class="hljs-keyword">from</span> typing <span class="hljs-keyword">import</span> Tuple</span></span>
+<span class="code-line"><span class="line-number">3</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">4</span><span class="line-content"><span class="hljs-decorator">@dataclass</span></span></span>
+<span class="code-line"><span class="line-number">5</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">FeedbackMessage</span>:</span></span>
+<span class="code-line"><span class="line-number">6</span><span class="line-content">    text: <span class="hljs-type">str</span></span></span>
+<span class="code-line"><span class="line-number">7</span><span class="line-content">    time: <span class="hljs-type">float</span></span></span>
+<span class="code-line"><span class="line-number">8</span><span class="line-content">    color: <span class="hljs-type">Tuple</span>[<span class="hljs-type">int</span>, <span class="hljs-type">int</span>, <span class="hljs-type">int</span>]</span></span>
+<span class="code-line"><span class="line-number">9</span><span class="line-content"></span></span>
+<span class="code-line"><span class="line-number">10</span><span class="line-content"><span class="hljs-decorator">@dataclass</span></span></span>
+<span class="code-line"><span class="line-number">11</span><span class="line-content"><span class="hljs-keyword">class</span> <span class="hljs-class">ComboEffect</span>:</span></span>
+<span class="code-line"><span class="line-number">12</span><span class="line-content">    time: <span class="hljs-type">float</span></span></span>
+<span class="code-line"><span class="line-number">13</span><span class="line-content">    combo: <span class="hljs-type">int</span></span></span></pre>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <span class="tag">Dataclass</span>
+                            <span class="tag">Type Safety</span>
+                            <span class="tag">Python 3.7+</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Positive Findings -->
+        <div class="section">
+            <div class="section-header">
+                <span style="color: var(--accent-success);">&#10004;</span>
+                <h2>優點與亮點</h2>
+            </div>
+            <div class="section-content">
+                <ul class="summary-list">
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>良好的模組化設計</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                專案將遊戲邏輯拆分為 Arrow、Score、Timing、Difficulty 等獨立模組，
+                                符合關注點分離原則，易於維護和擴展。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>完整的繁體中文文件</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                所有模組都有繁體中文的 docstring 說明，符合專案規範要求。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>資源快取機制</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                AssetLoader 實作了圖片、音效、字體的快取機制，避免重複載入資源。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>優雅的降級處理</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                當資源檔案不存在時，系統會自動建立預設的替代資源（預設圖片、靜音音效），
+                                確保遊戲不會因缺少資源而崩潰。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>配置系統設計</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                Config 類別支援 JSON 配置檔的讀寫、深度合併、匯入匯出功能，
+                                並提供預設值回退機制。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="check-icon">&#10004;</span>
+                        <div>
+                            <strong>跨平台字體支援</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                AssetLoader 實作了跨平台的中文字體回退機制，
+                                支援 macOS、Windows、Linux 等多個作業系統。
+                            </p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Architecture Overview -->
+        <div class="section">
+            <div class="section-header">
+                <span>&#127959;</span>
+                <h2>架構概覽</h2>
+            </div>
+            <div class="section-content">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>專案結構</span>
+                        <span>Text</span>
+                    </div>
+                    <div class="code-content">
+<pre><span class="code-line"><span class="line-number"> </span><span class="line-content">dance-game/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9500;&#9472;&#9472; src/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9500;&#9472;&#9472; game/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; main.py          <span class="hljs-comment"># 程式入口點</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; engine.py        <span class="hljs-comment"># 遊戲引擎核心 (574 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; arrow.py         <span class="hljs-comment"># 箭頭物件 (119 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; score.py         <span class="hljs-comment"># 計分系統 (146 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; timing.py        <span class="hljs-comment"># 時機判定 (114 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; difficulty.py    <span class="hljs-comment"># 難度管理 (145 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; audio_manager.py <span class="hljs-comment"># 音效管理 (144 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9492;&#9472;&#9472; constants.py     <span class="hljs-comment"># 常數定義 (94 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9500;&#9472;&#9472; utils/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9500;&#9472;&#9472; asset_loader.py  <span class="hljs-comment"># 資源載入 (262 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9474;   &#9492;&#9472;&#9472; config.py        <span class="hljs-comment"># 配置管理 (204 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9492;&#9472;&#9472; assets/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;       &#9500;&#9472;&#9472; images/arrows/   <span class="hljs-comment"># 箭頭圖片</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;       &#9492;&#9472;&#9472; sounds/          <span class="hljs-comment"># 音效檔案</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9500;&#9472;&#9472; tests/</span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9500;&#9472;&#9472; test_score.py    <span class="hljs-comment"># 計分測試 (116 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9500;&#9472;&#9472; test_timing.py   <span class="hljs-comment"># 時機測試 (113 行)</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9474;   &#9492;&#9472;&#9472; test_arrow.py    <span class="hljs-comment"># 箭頭測試</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9500;&#9472;&#9472; pyproject.toml       <span class="hljs-comment"># 專案配置</span></span></span>
+<span class="code-line"><span class="line-number"> </span><span class="line-content">&#9492;&#9472;&#9472; config.json          <span class="hljs-comment"># 遊戲配置</span></span></span></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Dance Game 程式碼審查報告 | 生成時間: 2026-01-28 22:35:00</p>
+            <p style="margin-top: 0.5rem;">Powered by Review Reportor Skill | Roger Lo</p>
+        </footer>
+    </div>
+</body>
+</html>
